@@ -77,15 +77,28 @@ print_chars() {
   echo
 }
 
+usage() {
+  # shows usage information
+  echo "usage: bash tm.sh [OPTION]... input_file"
+  echo " -c --compile     no execution, write parsed, optimized program to file"
+  echo " -h --help        show help information"
+  echo " -i --max_iter x  number of operations to run before early stopping"
+  echo " -p --print       print out the program before execution"
+  echo " -o --optimize    apply basic optimizations"
+  echo " -O --Optimize    apply advanced, heavy optimizations"
+  echo " -r --raw         treat input as already parsed, use with compiled programs"
+  echo " -s --stime x     sleep for x seconds between operations"
+  echo " -S --step        only advance execution when user presses enter"
+}
+
 
 # =========================================
 # MAIN
 # =========================================
 main() {
-  local usage input quiet step stime optimize iters max_iters
+  local input quiet step stime optimize iters max_iters
   local heavy_optimize print compile raw_input
 
-  usage="usage: bash tm.sh [-h | -s | -p | -o | -q | --step | -i max_iters | -s sleep_time] input_file"
   input=''
   quiet=0
   step=0
@@ -100,40 +113,68 @@ main() {
 
   tape[0]=0
 
-  [[ -z "$2" ]] && { echo "$usage"; exit; }
-
   # options
   while [[ ! -z "${2:-}" ]]; do
     case $1 in
-      --help) echo "$usage"; exit ;;
-      -h)     echo "$usage"; exit ;;
-      --step) step=1              ;;
-      -s)     shift; stime=$1     ;;
-      -p)     print=1             ;;
-      -c)     compile=1           ;;
-      -r)     raw_input=1         ;;
-      -q)     quiet=1             ;;
-      -o)     optimize=1          ;;
-      -O)     heavy_optimize=1    ;;
-      -i)     shift; max_iters=$1 ;;
-      *)      echo "$usage"; exit ;;
+      -h)          usage; exit         ;;
+      --help)      usage; exit         ;;
+
+      -S)          step=1              ;;
+      --step)      step=1              ;;
+
+      -s)          shift; stime=$1     ;;
+      --stime)     shift; stime=$1     ;;
+
+      -p)          print=1             ;;
+      --print)     print=1             ;;
+
+      -c)          compile=1           ;;
+      --compile)   compile=1           ;;
+
+      -r)          raw_input=1         ;;
+      --raw)       raw_input=1         ;;
+
+      -q)          quiet=1             ;;
+      --quiet)     quiet=1             ;;
+
+      -o)          optimize=1          ;;
+      --optimize)  optimize=1          ;;
+
+      -O)          heavy_optimize=1    ;;
+      --Optimize)  heavy_optimize=1    ;;
+
+      -i)          shift; max_iters=$1 ;;
+      --max_iter)  shift; max_iters=$1 ;;
+
+      *)           usage; exit ;;
     esac
     shift
   done
 
   # input file
-  { [[ ! -z "${1:-}" ]] && input="$1"; } || { echo "$usage"; exit; }
+  if [[ ! -z "${1:-}" ]]; then
+
+    if [[ -e "${1}" ]]; then
+      input="$(cat "$1")"
+    else
+      input="$1"
+    fi
+
+  else
+    usage
+    exit
+  fi
 
   # convert all lines of input to an array of characters
   if (( raw_input )); then
-    tchars=$(cat "$input")
+    tchars="$input"
   else
-    tchars=$(grep -v '^[ ]*#.*' "$input" |   # remove comments
-             xargs                       |   # remove newlines
-             grep -o .                   |   # separate each character
-             grep '[]\+\>\<\[\.\,-]'     |   # remove non-syntax characters
-             grep -v '\\'                |   # remove pesky backslashes
-             tr -d '\n')                     # back to one line
+    tchars=$(grep -v '^[ ]*#.*' <<< "$input" |   # remove comments
+             xargs                           |   # remove newlines
+             grep -o .                       |   # separate each character
+             grep '[]\+\>\<\[\.\,-]'         |   # remove non-syntax characters
+             grep -v '\\'                    |   # remove pesky backslashes
+             tr -d '\n')                         # back to one line
   fi
   plength=${#tchars}
 
@@ -527,9 +568,8 @@ main() {
   (( iters > max_iters )) && echo "iteration maximum reached"
 
   # final output
-  echo
   print_tape
-  echo "operations: $iters"
+  (( quiet )) || echo "operations: $iters"
 }
 
 main "$@"
