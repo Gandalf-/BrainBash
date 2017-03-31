@@ -440,7 +440,7 @@ main() {
         [0-9]*'_'[0-9]*'_'[0-9]*C)
           # composite copy left
           # [->+>+<<]   -> 2_1_0C
-          # 4 0 0       -> 0 4 4
+          # [->++>++<<]
           # [->>+>+<<<] -> 2_1_1C
           op_data=(${chars[$char_pos]//_/ })
           copies=${op_data[0]}
@@ -450,7 +450,7 @@ main() {
           counter=$(( shifts + offset ))
 
           while (( copies > 0 )); do
-            let tape[tape_pos+counter]=tape[tape_pos]
+            let tape[tape_pos+counter]+=tape[tape_pos]
             let copies--
             let counter+=shifts
           done
