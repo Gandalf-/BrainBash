@@ -91,27 +91,7 @@ usage() {
   echo " -S --step        only advance execution when user presses enter"
 }
 
-
-# =========================================
-# MAIN
-# =========================================
-main() {
-  local input quiet step stime optimize iters max_iters
-  local heavy_optimize print compile raw_input
-
-  input=''
-  quiet=0
-  step=0
-  stime=0
-  max_iters=1000000
-  iters=0
-  optimize=0
-  heavy_optimize=0
-  print=0
-  raw_input=0
-  compile=0
-
-  tape[0]=0
+parse_options_and_input() {
 
   # options
   while [[ ! -z "${2:-}" ]]; do
@@ -137,8 +117,8 @@ main() {
       -q)          quiet=1             ;;
       --quiet)     quiet=1             ;;
 
-      -o)          optimize=1          ;;
-      --optimize)  optimize=1          ;;
+      -o)          simple_optimize=1   ;;
+      --optimize)  simple_optimize=1   ;;
 
       -O)          heavy_optimize=1    ;;
       --Optimize)  heavy_optimize=1    ;;
@@ -164,6 +144,173 @@ main() {
     usage
     exit
   fi
+}
+
+# =========================================
+# OPTIMIZATION
+# =========================================
+optimize_moves() {
+
+  move_dec='\[-[<|>]\+[+|-]\+[>|<]\+\]'  # decrement, move left or right
+  dec_move='\[[<|>]\+[+|-]\+[>|<]\+-\]'  # move, decrement left or right
+
+  # recognize move operations, in the form [->>+<<] or [>>+<<-], where the
+  # number of places moved is variable and saved to use during execution
+  #   [->>>+<<<] -> 3a
+  #   [-<<+>>]   -> 2A
+  #
+  # extended, includes variable number of increments. which would be a move
+  # with and a multiply
+  #   [->>+++<<]  -> 2a3
+  #   [-<<<++>>>] -> 3A2
+  while read -r move; do
+
+    # escape brackets for sed
+    move="$(sed -e 's/\[/\\\[/g' <<< "$move" | sed -e 's/\]/\\\]/g')"
+
+    case $(grep -o '[>|<][+|-]\+[<|>]' <<< "${move}" | head -n 1) in
+      # moving to the right some number of places
+      # [->>+<<]
+      '>+<')
+        places=$(grep -o -- '>' <<< "${move}" | grep -c '>')
+        tchars=$(sed -e "s/$move/${places}A/g" <<< "${tchars}")
+        ;;
+      # add many times to the right some number of places
+      # [->>+++<<]
+      '>+'*'<')
+        places=$(grep -o -- '>' <<< "${move}" | grep -c '>')
+        addition=$(grep -o -- '+' <<< "${move}" | grep -c '+')
+        tchars=$(sed -e "s/$move/${addition}_${places}A/g" <<< "${tchars}")
+        ;;
+
+      # moving to the left some number of places
+      '<+>')
+        places=$(grep -o -- '<' <<< "${move}" | grep -c '<')
+        tchars=$(sed -e "s/$move/${places}a/g" <<< "${tchars}")
+        ;;
+      # add many times to the left some number of places
+      '<+'*'>')
+        places=$(grep -o -- '<' <<< "${move}" | grep -c '<')
+        addition=$(grep -o -- '+' <<< "${move}" | grep -c '+')
+        tchars=$(sed -e "s/$move/${addition}_${places}a/g" <<< "${tchars}")
+        ;;
+
+      # subtracting to the right some number of places
+      '>-<')
+        places=$(grep -o -- '>' <<< "${move}" | grep -c '>')
+        tchars=$(sed -e "s/$move/${places}S/g" <<< "${tchars}")
+        ;;
+      # subtracting many times to the right some number of places
+      '>-'*'<')
+        places=$(grep -o -- '>' <<< "${move}" | grep -c '>')
+        subtraction=$(grep -o -- '-' <<< "${move}" | grep -c '-')
+        let subtraction--   # decrement once for loop decrement
+        tchars=$(sed -e "s/$move/${subtraction}_${places}S/g" <<< "${tchars}")
+        ;;
+
+      # subtracting to the left some number of places
+      '<->')
+        places=$(grep -o -- '<' <<< "${move}" | grep -c '<')
+        tchars=$(sed -e "s/$move/${places}s/g" <<< "${tchars}")
+        ;;
+
+      *)
+        echo "matched: $(grep -o -- '[>|<][+|-]\+[<|>]' <<< "${move}" | head -n 1)"
+        ;;
+    esac
+  done < <(grep -o -- "${move_dec}\|${dec_move}" <<< "${tchars}")
+}
+
+optimize_copies() {
+
+  copy_dec='\[-[>]*\(>+\)\+[<]\+\]'
+  dec_copy='\[[>]*\(>+\)\+[<]\+\-]'
+
+  # recongize copies
+  #   we have to determine the number of copies and where each one is going
+  while read -r move; do
+
+    # escape brackets
+    move="$(sed -e 's/\[/\\\[/g' <<< "$move" | sed -e 's/\]/\\\]/g')"
+
+    # how many copies
+    copies=$(grep -o -- '+' <<< "${move}" | grep -c '+')
+
+    case $(grep -o -- '+[<|>]' <<< "${move}" | tail -n 1) in
+      # copying to the right
+      # the number of copies to make _ how far each copy is from other copies
+      # _ an offset for the entire copy
+      # [->+>+<<]     -> 2_1_0C
+      # [->>>+>+<<<<] -> 2_1_2C
+      '+<')
+        places=1 #$(grep -o -- '>+' <<< "${move}" | grep -c '>+')
+        shifts=$(( $(grep -o -- '<' <<< "${move}" | grep -c '<') - copies ))
+        tchars=$(sed -e "s/$move/${copies}_${places}_${shifts}C/g" <<< "${tchars}")
+        ;;
+
+      # copying to the left
+      # [-<+<+>>]
+      '+>')
+        places=$(grep -o -- '<' <<< "${move}" | grep -c '<')
+        let places/=copies
+        tchars=$(sed -e "s/$move/${copies}_${places}c/g" <<< "${tchars}")
+        ;;
+      *)
+        echo "fail"
+        ;;
+    esac
+  done < <(grep -o -- "$copy_dec\|$dec_copy" <<< "${tchars}")
+}
+
+apply_heavy_optimizations() {
+
+  # heavy optimzations are more complex
+  optimize_moves
+
+  # recongize zeroing
+  tchars=$(sed -e 's/\[-\]/Z/g' <<< "$tchars")
+
+  optimize_copies
+}
+
+apply_simple_optimizations() {
+
+  # simple optimization recongizes repeated instructions and combines them.
+  # for example >>>> becomes 4>
+
+  # optimize repeated operations (2 or more occurances)
+  for operation in '---' '+++' '>>>' '<<<'; do
+
+    # replace each match with it's simplified form
+    while read -r match; do
+      tchars=$(sed -e "s/$match/${#match}${operation::1}/g" <<< "${tchars}")
+    done < <(grep -o -- "${operation}*" <<< "${tchars}" | sort -r)
+
+  done
+}
+
+
+# =========================================
+# MAIN
+# =========================================
+main() {
+  local input quiet step stime simple_optimize iters max_iters
+  local heavy_optimize print compile raw_input
+
+  input=''
+  quiet=0
+  step=0
+  stime=0
+  max_iters=1000000
+  iters=0
+  simple_optimize=0
+  heavy_optimize=0
+  print=0
+  raw_input=0
+  compile=0
+  tape[0]=0
+
+  parse_options_and_input "$@"
 
   # convert all lines of input to an array of characters
   if (( raw_input )); then
@@ -178,141 +325,15 @@ main() {
   fi
   plength=${#tchars}
 
-  # heavy optimzations are more complex
-	if (( heavy_optimize )); then
-
-    optimize=1
-    move_dec='\[-[<|>]\+[+|-]\+[>|<]\+\]'  # decrement, move left or right
-    dec_move='\[[<|>]\+[+|-]\+[>|<]\+-\]'  # move, decrement left or right
-
-    # recognize move operations, in the form [->>+<<] or [>>+<<-], where the
-    # number of places moved is variable and saved to use during execution
-    #   [->>>+<<<] -> 3a
-    #   [-<<+>>]   -> 2A
-    #
-    # extended, includes variable number of increments. which would be a move
-    # with and a multiply
-    #   [->>+++<<]  -> 2a3
-    #   [-<<<++>>>] -> 3A2
-    while read -r move; do
-
-      # escape brackets for sed
-      move="$(sed -e 's/\[/\\\[/g' <<< "$move" | sed -e 's/\]/\\\]/g')"
-
-      case $(grep -o '[>|<][+|-]\+[<|>]' <<< "${move}" | head -n 1) in
-        # moving to the right some number of places
-        # [->>+<<]
-        '>+<')
-          places=$(grep -o -- '>' <<< "${move}" | grep -c '>')
-          tchars=$(sed -e "s/$move/${places}A/g" <<< "${tchars}")
-          ;;
-        # add many times to the right some number of places
-        # [->>+++<<]
-        '>+'*'<')
-          places=$(grep -o -- '>' <<< "${move}" | grep -c '>')
-          addition=$(grep -o -- '+' <<< "${move}" | grep -c '+')
-          tchars=$(sed -e "s/$move/${addition}_${places}A/g" <<< "${tchars}")
-          ;;
-
-        # moving to the left some number of places
-        '<+>')
-          places=$(grep -o -- '<' <<< "${move}" | grep -c '<')
-          tchars=$(sed -e "s/$move/${places}a/g" <<< "${tchars}")
-          ;;
-        # add many times to the left some number of places
-        '<+'*'>')
-          places=$(grep -o -- '<' <<< "${move}" | grep -c '<')
-          addition=$(grep -o -- '+' <<< "${move}" | grep -c '+')
-          tchars=$(sed -e "s/$move/${addition}_${places}a/g" <<< "${tchars}")
-          ;;
-
-        # subtracting to the right some number of places
-        '>-<')
-          places=$(grep -o -- '>' <<< "${move}" | grep -c '>')
-          tchars=$(sed -e "s/$move/${places}S/g" <<< "${tchars}")
-          ;;
-        # subtracting many times to the right some number of places
-        '>-'*'<')
-          places=$(grep -o -- '>' <<< "${move}" | grep -c '>')
-          subtraction=$(grep -o -- '-' <<< "${move}" | grep -c '-')
-          let subtraction--   # decrement once for loop decrement
-          tchars=$(sed -e "s/$move/${subtraction}_${places}S/g" <<< "${tchars}")
-          ;;
-
-        # subtracting to the left some number of places
-        '<->')
-          places=$(grep -o -- '<' <<< "${move}" | grep -c '<')
-          tchars=$(sed -e "s/$move/${places}s/g" <<< "${tchars}")
-          ;;
-
-        *)
-          echo "matched: $(grep -o '[>|<][+|-]\+[<|>]' <<< "${move}" | head -n 1)"
-          ;;
-      esac
-    done < <(grep -o -- "${move_dec}\|${dec_move}" <<< "${tchars}")
-
-    # recongize zeroing
-    tchars=$(sed -e 's/\[-\]/Z/g' <<< "$tchars")
-
-    copy_dec='\[-[>]*\(>+\)\+[<]\+\]'
-    dec_copy='\[[>]*\(>+\)\+[<]\+\-]'
-
-    # recongize copies
-    #   we have to determine the number of copies and where each one is going
-    while read -r move; do
-
-      # escape brackets
-      move="$(sed -e 's/\[/\\\[/g' <<< "$move" | sed -e 's/\]/\\\]/g')"
-
-      # how many copies
-      copies=$(grep -o -- '+' <<< "${move}" | grep -c '+')
-
-      case $(grep -o -- '+[<|>]' <<< "${move}" | tail -n 1) in
-        # copying to the right
-        # the number of copies to make _ how far each copy is from other copies
-        # _ an offset for the entire copy
-        # [->+>+<<]     -> 2_1_0C
-        # [->>>+>+<<<<] -> 2_1_2C
-        '+<')
-          places=1 #$(grep -o -- '>+' <<< "${move}" | grep -c '>+')
-          shifts=$(( $(grep -o -- '<' <<< "${move}" | grep -c '<') - copies ))
-          tchars=$(sed -e "s/$move/${copies}_${places}_${shifts}C/g" <<< "${tchars}")
-          ;;
-
-        # copying to the left
-        # [-<+<+>>]
-        '+>')
-          places=$(grep -o -- '<' <<< "${move}" | grep -c '<')
-          let places/=copies
-          tchars=$(sed -e "s/$move/${copies}_${places}c/g" <<< "${tchars}")
-          ;;
-        *)
-          echo "fail"
-          ;;
-      esac
-    done < <(grep -o -- "$copy_dec\|$dec_copy" <<< "${tchars}")
-  fi
-
-  # simple optimization recongizes repeated instructions and combines them.
-  # for example >>>> becomes 4>
-  if (( optimize )); then
-
-    # optimize repeated operations (2 or more occurances)
-    for operation in '---' '+++' '>>>' '<<<'; do
-
-      # replace each match with it's simplified form
-      while read -r match; do
-        tchars=$(sed -e "s/$match/${#match}${operation::1}/g" <<< "${tchars}")
-      done < <(grep -o -- "${operation}*" <<< "${tchars}" | sort -r)
-
-    done
-  fi
+  # optimizations
+	(( heavy_optimize  )) && { apply_heavy_optimizations; simple_optimize=1; }
+  (( simple_optimize )) &&   apply_simple_optimizations
 
   # optionally print the program and optimizing results
   if (( print )); then
     echo "program: $tchars"
 
-    if (( optimize )); then
+    if (( simple_optimize )); then
       echo -n "optimized away "
       echo -n "$(bc -l <<< "scale=4;(1-(${#tchars}/$plength))*100")"
       echo "% of instructions"
