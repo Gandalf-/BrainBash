@@ -34,7 +34,7 @@ export normal="\033[00m"
 # UTILITY
 # =========================================
 print_tape() {
-	# prints the entire tape, marking the current position green
+  # prints the entire tape, marking the current position green
 
   local i
 
@@ -49,14 +49,14 @@ print_tape() {
       echo -n "${tape[$i]} "
     fi
 
-    i=$((i + 1))
+    let i++
   done
 
   echo
 }
 
 print_chars() {
-	# prints the entire input, marking the current position green
+  # prints the entire input, marking the current position green
 
   local i
 
@@ -71,7 +71,7 @@ print_chars() {
       echo -n "${chars[$i]} "
     fi
 
-    i=$((i + 1))
+    let i++
   done
 
   echo
@@ -326,7 +326,7 @@ main() {
   plength=${#tchars}
 
   # optimizations
-	(( heavy_optimize  )) && { apply_heavy_optimizations; simple_optimize=1; }
+  (( heavy_optimize  )) && { apply_heavy_optimizations; simple_optimize=1; }
   (( simple_optimize )) &&   apply_simple_optimizations
 
   # optionally print the program and optimizing results
@@ -362,6 +362,7 @@ main() {
       (( quiet )) || print_chars
 
       # operations
+      # these are intentionally inlined for performance
       case ${chars[$char_pos]} in
 
         # composite add to the left
@@ -452,11 +453,11 @@ main() {
           let tape[tape_pos]=0
           ;;
 
-				Z)
-					# composite set this position to zero
+        Z)
+          # composite set this position to zero
           # [-] -> Z
           let tape[tape_pos]=0
-					;;
+          ;;
 
         [0-9]*'_'[0-9]*'_'[0-9]*C)
           # composite copy left
@@ -578,6 +579,7 @@ main() {
         elif [[ $stime != 0 ]]; then
           sleep "$stime"
         fi
+
         echo
       fi
     fi
