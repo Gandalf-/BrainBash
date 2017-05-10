@@ -14,6 +14,7 @@
 
 set -o pipefail
 
+
 # =========================================
 # GLOBALS
 # =========================================
@@ -79,19 +80,26 @@ print_chars() {
 
 usage() {
   # shows usage information
-  echo "usage: bash tm.sh [OPTION]... input_file"
-  echo " -c --compile     no execution, write parsed, optimized program to file"
-  echo " -h --help        show help information"
-  echo " -i --max_iter x  number of operations to run before early stopping"
-  echo " -p --print       print out the program before execution"
-  echo " -o --optimize    apply basic optimizations"
-  echo " -O --Optimize    apply advanced, heavy optimizations"
-  echo " -r --raw         treat input as already parsed, use with compiled programs"
-  echo " -s --stime x     sleep for x seconds between operations"
-  echo " -S --step        only advance execution when user presses enter"
+
+  echo "
+  usage: bash tm.sh [OPTION]... input_file
+    -c --compile     no execution, write parsed, optimized program to file
+    -h --help        show help information
+    -i --max_iter x  number of operations to run before early stopping
+    -p --print       print out the program before execution
+    -o --optimize    apply basic optimizations
+    -O --Optimize    apply advanced, heavy optimizations
+    -q --quiet       suppress execution trace
+    -r --raw         treat input as already parsed, use with compiled programs
+    -s --stime x     sleep for x seconds between operations
+    -S --step        only advance execution when user presses enter
+  "
 }
 
 parse_options_and_input() {
+  # process flags to set run time variables
+
+  (( $# < 2 )) && { usage; exit; }
 
   # options
   while [[ ! -z "${2:-}" ]]; do
@@ -315,6 +323,7 @@ main() {
   # convert all lines of input to an array of characters
   if (( raw_input )); then
     tchars="$input"
+
   else
     tchars=$(grep -v '^[ ]*#.*' <<< "$input" |   # remove comments
              xargs                           |   # remove newlines
@@ -361,7 +370,9 @@ main() {
     else
       (( quiet )) || print_chars
 
-      # operations
+      # =========================================
+      # OPERATIONS
+      # =========================================
       # these are intentionally inlined for performance
       case ${chars[$char_pos]} in
 
