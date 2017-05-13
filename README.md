@@ -20,8 +20,9 @@ variety of advanced Bash features such as:
 **tm.sh** provides a number of features:
 - interactive interpreter
 - extensive optimizations
-- execution tracing
+- colorized execution tracing
 - compilation, in the way of saving optimizations for later
+- built in execution profiler
 
 ### Options
 
@@ -35,6 +36,7 @@ variety of advanced Bash features such as:
     -h --help        show help information
     -i --max_iter x  number of operations to run before early stopping
     -p --print       print out the program before execution
+    -P --profile     show instruction execution information
     -o --optimize    apply basic optimizations
     -O --Optimize    apply advanced, heavy optimizations
     -q --quiet       suppress execution trace

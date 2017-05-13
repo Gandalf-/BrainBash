@@ -21,6 +21,7 @@ set -o pipefail
 declare -a chars              # array of characters, input
 declare -a tape               # array of integers, memory
 declare -a stack              # array of integers, call stack
+declare -a profiler           # array of integers, instruction accounting
 
 export tape_pos=0             # integer, our current position on the tape
 export char_pos=0             # integer, our current position in the input
@@ -87,6 +88,7 @@ usage() {
     -h --help        show help information
     -i --max_iter x  number of operations to run before early stopping
     -p --print       print out the program before execution
+    -P --profile     show instruction execution information
     -o --optimize    apply basic optimizations
     -O --Optimize    apply advanced, heavy optimizations
     -q --quiet       suppress execution trace
@@ -115,6 +117,9 @@ parse_options_and_input() {
 
       -p)          print=1             ;;
       --print)     print=1             ;;
+
+      -P)          profile=1           ;;
+      --profile)   profile=1           ;;
 
       -c)          compile=1           ;;
       --compile)   compile=1           ;;
@@ -151,6 +156,53 @@ parse_options_and_input() {
   else
     usage
     exit
+  fi
+}
+
+run_profiler() {
+  # show what percentage of total execution each instruction took
+  # useful for finding heavily repeated loops
+
+  local instruction new_percent old_percent total_percent
+
+  instruction=${chars[0]}
+  old_percent="$( bc -l <<< "${profiler[0]} / $iters * 100" )"
+  total_percent=""
+
+  echo
+  echo " % time : instuction(s)"
+  echo "----------------------------------------------"
+  for ((i=1; i < ${#profiler[@]}; i++)); do
+    new_percent="$( bc -l <<< "${profiler[$i]} / $iters * 100" )"
+
+    if [[ "$new_percent" == "$old_percent" ]]; then
+      if [[ -z "$total_percent" ]]; then
+        total_percent="$(bc -l <<< "$old_percent + $new_percent")"
+      else
+        total_percent="$(bc -l <<< "$total_percent + $new_percent")"
+      fi
+
+      instruction="${instruction}${chars[$i]}"
+      old_percent="$new_percent"
+
+    else
+      if [[ -z "$total_percent" ]]; then
+        printf "% 7.2f : %s\n" "$old_percent" "$instruction"
+      else
+        printf "% 7.2f : %s\n" "$total_percent" "$instruction"
+      fi
+
+      instruction="${chars[$i]}"
+      old_percent="$new_percent"
+      total_percent=""
+    fi
+  done
+
+  if [[ -z "$total_percent" ]]; then
+    printf "% 7.2f : %s\n" "$old_percent" "$instruction"
+
+  else
+    printf "% 7.2f : %s\n" "$total_percent" "$instruction"
   fi
 }
 
@@ -302,7 +354,7 @@ apply_simple_optimizations() {
 # MAIN
 # =========================================
 main() {
-  local input quiet step stime simple_optimize iters max_iters
+  local input quiet step stime simple_optimize iters max_iters profile
   local heavy_optimize print compile raw_input
 
   input=''
@@ -316,6 +368,7 @@ main() {
   print=0
   raw_input=0
   compile=0
+  profile=0
   tape[0]=0
 
   parse_options_and_input "$@"
@@ -347,6 +400,7 @@ main() {
       echo -n "$(bc -l <<< "scale=4;(1-(${#tchars}/$plength))*100")"
       echo "% of instructions"
     fi
+    echo
   fi
 
   # compile option writes a new program file for use with the -r option
@@ -360,6 +414,8 @@ main() {
 
   # run the program
   while [[ ! -z ${chars[$char_pos]:-} && $iters -lt $max_iters ]]; do
+
+    let profiler[char_pos]++
 
     if (( brace_depth > 0 )) ; then
       case ${chars[$char_pos]} in
@@ -604,6 +660,9 @@ main() {
   # final output
   print_tape
   (( quiet )) || echo "operations: $iters"
+
+  # profiler output
+  (( profile )) && run_profiler
 }
 
 main "$@"
