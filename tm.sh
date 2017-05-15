@@ -206,6 +206,19 @@ run_profiler() {
   fi
 }
 
+shut_down() {
+
+  if (( execution_started )); then
+    # final output
+    print_tape
+    (( quiet )) || echo "operations: $iters"
+
+    # profiler output
+    (( profile )) && run_profiler
+  fi
+  exit
+}
+
 # =========================================
 # OPTIMIZATION
 # =========================================
@@ -355,7 +368,7 @@ apply_simple_optimizations() {
 # =========================================
 main() {
   local input quiet step stime simple_optimize iters max_iters profile
-  local heavy_optimize print compile raw_input
+  local heavy_optimize print compile raw_input execution_started
 
   input=''
   quiet=0
@@ -365,6 +378,7 @@ main() {
   iters=0
   simple_optimize=0
   heavy_optimize=0
+  execution_started=0
   print=0
   raw_input=0
   compile=0
@@ -413,6 +427,8 @@ main() {
   chars=( $(grep -o -- '[_0-9]*.' <<< "$tchars") )
 
   # run the program
+  execution_started=1
+
   while [[ ! -z ${chars[$char_pos]:-} && $iters -lt $max_iters ]]; do
 
     let profiler[char_pos]++
@@ -655,14 +671,10 @@ main() {
     char_pos=$(( char_pos + 1 ))
   done
 
-  (( iters > max_iters )) && echo "iteration maximum reached"
+  (( iters = max_iters )) && echo "iteration maximum reached: $max_iters"
 
-  # final output
-  print_tape
-  (( quiet )) || echo "operations: $iters"
-
-  # profiler output
-  (( profile )) && run_profiler
+  shut_down
 }
 
+trap shut_down INT
 main "$@"
