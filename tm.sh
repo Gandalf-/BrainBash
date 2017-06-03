@@ -163,11 +163,13 @@ run_profiler() {
   # show what percentage of total execution each instruction took
   # useful for finding heavily repeated loops
 
-  local instruction new_percent old_percent total_percent
+  local instruction new_percent old_percent sum_percent b_depth size
 
   instruction=${chars[0]}
   old_percent="$( bc -l <<< "${profiler[0]} / $iters * 100" )"
-  total_percent=""
+  sum_percent=""
+  b_depth=1
+  b_change=0
 
   echo
   echo " % time : instuction(s)"
@@ -175,34 +177,48 @@ run_profiler() {
   for ((i=1; i < ${#profiler[@]}; i++)); do
     new_percent="$( bc -l <<< "${profiler[$i]} / $iters * 100" )"
 
+    # attempt to bundle "run together" strings of instructions together
+    # "run together" means contiguous instructions with the same frequency
     if [[ "$new_percent" == "$old_percent" ]]; then
-      if [[ -z "$total_percent" ]]; then
-        total_percent="$(bc -l <<< "$old_percent + $new_percent")"
+      if [[ -z "$sum_percent" ]]; then
+        sum_percent="$(bc -l <<< "$old_percent + $new_percent")"
       else
-        total_percent="$(bc -l <<< "$total_percent + $new_percent")"
+        sum_percent="$(bc -l <<< "$sum_percent + $new_percent")"
       fi
 
       instruction="${instruction}${chars[$i]}"
       old_percent="$new_percent"
 
+      [[ "${chars[$i]}" == "[" ]] && let b_change++
+      [[ "${chars[$i]}" == "]" ]] && let b_change--
+
     else
-      if [[ -z "$total_percent" ]]; then
-        printf "% 7.2f : %s\n" "$old_percent" "$instruction"
+      size=$(( b_depth + ${#instruction} ))
+
+      if [[ -z "$sum_percent" ]]; then
+        printf '% 7.2f :% *s\n' "$old_percent" "$size" "$instruction"
       else
-        printf "% 7.2f : %s\n" "$total_percent" "$instruction"
+        printf '% 7.2f :% *s\n' "$sum_percent" "$size" "$instruction"
       fi
 
       instruction="${chars[$i]}"
       old_percent="$new_percent"
-      total_percent=""
+      sum_percent=""
+
+      let b_depth+=b_change
+      b_change=0
+
+      [[ "${chars[$i]}" == "]" ]] && let b_depth--
+      [[ "${chars[$i]}" == "[" ]] && let b_depth++
     fi
   done
 
-  if [[ -z "$total_percent" ]]; then
-    printf "% 7.2f : %s\n" "$old_percent" "$instruction"
+  size=$(( b_depth + ${#instruction} ))
 
+  if [[ -z "$sum_percent" ]]; then
+    printf '% 7.2f :% *s\n' "$old_percent" "$size" "$instruction"
   else
-    printf "% 7.2f : %s\n" "$total_percent" "$instruction"
+    printf '% 7.2f :% *s\n' "$sum_percent" "$size" "$instruction"
   fi
 }
 
@@ -671,7 +687,7 @@ main() {
     char_pos=$(( char_pos + 1 ))
   done
 
-  (( iters = max_iters )) && echo "iteration maximum reached: $max_iters"
+  (( iters == max_iters )) && echo "iteration maximum reached: $max_iters"
 
   shut_down
 }
