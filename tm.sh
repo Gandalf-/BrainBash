@@ -43,7 +43,7 @@ print_tape() {
   i=0
   echo -n "tape  : "
 
-  while [[ -n "${tape[$i]:-}" ]]; do
+  while [[ "${tape[$i]:-}" ]]; do
 
     if (( i == tape_pos )); then
       printf "%b%s%b" "$green" "${tape[$i]} " "$normal"
@@ -65,7 +65,7 @@ print_chars() {
   i=0
   echo -n "chars : "
 
-  while [[ -n "${chars[$i]:-}" ]] ; do
+  while [[ "${chars[$i]:-}" ]] ; do
 
     if (( i == char_pos )); then
       printf "%b%s%b" "$green" "${chars[$i]} " "$normal"
@@ -104,7 +104,7 @@ parse_options_and_input() {
   (( $# < 2 )) && { usage; exit; }
 
   # options
-  while [[ -n "${2:-}" ]]; do
+  while [[ "${2:-}" ]]; do
     case $1 in
       -h|--help)      usage; exit         ;;
       -S|--step)      step=1              ;;
@@ -123,7 +123,7 @@ parse_options_and_input() {
   done
 
   # input file
-  if [[ -n "${1:-}" ]]; then
+  if [[ "${1:-}" ]]; then
 
     if [[ -e "${1}" ]]; then
       input="$(cat "$1")"
@@ -423,7 +423,7 @@ main() {
   # run the program
   execution_started=1
 
-  while [[ -n ${chars[$char_pos]:-} && $iters -lt $max_iters ]]; do
+  while [[ ${chars[$char_pos]:-} && $iters -lt $max_iters ]]; do
 
     let profiler[char_pos]++
 
