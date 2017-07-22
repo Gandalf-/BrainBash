@@ -106,40 +106,18 @@ parse_options_and_input() {
   # options
   while [[ -n "${2:-}" ]]; do
     case $1 in
-      -h)          usage; exit         ;;
-      --help)      usage; exit         ;;
-
-      -S)          step=1              ;;
-      --step)      step=1              ;;
-
-      -s)          shift; stime=$1     ;;
-      --stime)     shift; stime=$1     ;;
-
-      -p)          print=1             ;;
-      --print)     print=1             ;;
-
-      -P)          profile=1           ;;
-      --profile)   profile=1           ;;
-
-      -c)          compile=1           ;;
-      --compile)   compile=1           ;;
-
-      -r)          raw_input=1         ;;
-      --raw)       raw_input=1         ;;
-
-      -q)          quiet=1             ;;
-      --quiet)     quiet=1             ;;
-
-      -o)          simple_optimize=1   ;;
-      --optimize)  simple_optimize=1   ;;
-
-      -O)          heavy_optimize=1    ;;
-      --Optimize)  heavy_optimize=1    ;;
-
-      -i)          shift; max_iters=$1 ;;
-      --max_iter)  shift; max_iters=$1 ;;
-
-      *)           usage; exit ;;
+      -h|--help)      usage; exit         ;;
+      -S|--step)      step=1              ;;
+      -s|--stime)     shift; stime=$1     ;;
+      -p|--print)     print=1             ;;
+      -P|--profile)   profile=1           ;;
+      -c|--compile)   compile=1           ;;
+      -r|--raw)       raw_input=1         ;;
+      -q|--quiet)     quiet=1             ;;
+      -o|--optimize)  simple_optimize=1   ;;
+      -O|--Optimize)  heavy_optimize=1    ;;
+      -i|--max_iter)  shift; max_iters=$1 ;;
+      *)              usage; exit         ;;
     esac
     shift
   done
@@ -255,7 +233,7 @@ optimize_moves() {
   while read -r move; do
 
     # escape brackets for sed
-    move="$(sed -e 's/\[/\\\[/g' <<< "$move" | sed -e 's/\]/\\\]/g')"
+    move="$(sed -e 's/\[/\\\[/g' -e 's/\]/\\\]/g' <<< "$move" )"
 
     case $(grep -o '[>|<][+|-]\+[<|>]' <<< "${move}" | head -n 1) in
       # moving to the right some number of places
@@ -320,7 +298,7 @@ optimize_copies() {
   while read -r move; do
 
     # escape brackets
-    move="$(sed -e 's/\[/\\\[/g' <<< "$move" | sed -e 's/\]/\\\]/g')"
+    move="$(sed -e 's/\[/\\\[/g' -e 's/\]/\\\]/g' <<< "$move" )"
 
     # how many copies
     copies=$(grep -o -- '+' <<< "${move}" | grep -c '+')
