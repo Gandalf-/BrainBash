@@ -43,7 +43,7 @@ print_tape() {
   i=0
   echo -n "tape  : "
 
-  while [[ ! -z "${tape[$i]:-}" ]]; do
+  while [[ -n "${tape[$i]:-}" ]]; do
 
     if (( i == tape_pos )); then
       printf "%b%s%b" "$green" "${tape[$i]} " "$normal"
@@ -65,7 +65,7 @@ print_chars() {
   i=0
   echo -n "chars : "
 
-  while [[ ! -z "${chars[$i]:-}" ]] ; do
+  while [[ -n "${chars[$i]:-}" ]] ; do
 
     if (( i == char_pos )); then
       printf "%b%s%b" "$green" "${chars[$i]} " "$normal"
@@ -104,7 +104,7 @@ parse_options_and_input() {
   (( $# < 2 )) && { usage; exit; }
 
   # options
-  while [[ ! -z "${2:-}" ]]; do
+  while [[ -n "${2:-}" ]]; do
     case $1 in
       -h)          usage; exit         ;;
       --help)      usage; exit         ;;
@@ -145,7 +145,7 @@ parse_options_and_input() {
   done
 
   # input file
-  if [[ ! -z "${1:-}" ]]; then
+  if [[ -n "${1:-}" ]]; then
 
     if [[ -e "${1}" ]]; then
       input="$(cat "$1")"
@@ -224,14 +224,14 @@ run_profiler() {
 
 shut_down() {
 
-  if (( execution_started )); then
+  (( execution_started )) && {
     # final output
     print_tape
     (( quiet )) || echo "operations: $iters"
 
     # profiler output
     (( profile )) && run_profiler
-  fi
+  }
   exit
 }
 
@@ -422,22 +422,22 @@ main() {
   (( simple_optimize )) &&   apply_simple_optimizations
 
   # optionally print the program and optimizing results
-  if (( print )); then
+  (( print )) && {
     echo "program: $tchars"
 
-    if (( simple_optimize )); then
+    (( simple_optimize )) && {
       echo -n "optimized away "
       echo -n "$(bc -l <<< "scale=4;(1-(${#tchars}/$plength))*100")"
       echo "% of instructions"
-    fi
+    }
     echo
-  fi
+  }
 
   # compile option writes a new program file for use with the -r option
-  if (( compile )); then
+  (( compile )) && {
     echo "${tchars}" > "$input".raw
     exit
-  fi
+  }
 
   # convert tchar string to array for execution
   chars=( $(grep -o -- '[_0-9]*.' <<< "$tchars") )
@@ -445,7 +445,7 @@ main() {
   # run the program
   execution_started=1
 
-  while [[ ! -z ${chars[$char_pos]:-} && $iters -lt $max_iters ]]; do
+  while [[ -n ${chars[$char_pos]:-} && $iters -lt $max_iters ]]; do
 
     let profiler[char_pos]++
 
@@ -493,13 +493,13 @@ main() {
           amount=${op_data[0]}
           let amount*=tape[tape_pos]
 
-          if (( places > 1 )); then
+          (( places > 1 )) && {
             counter=$((tape_pos+places))
             while [[ -z ${tape[$counter]:-} ]]; do
               tape[$counter]=0
               let counter--
             done
-          fi
+          }
           let tape[tape_pos+places]+=amount
           let tape[tape_pos]=0
           ;;
@@ -508,13 +508,13 @@ main() {
           # [->>+<<] 2A
           places=${chars[$char_pos]::-1}
 
-          if (( places > 1 )); then
+          (( places > 1 )) && {
             counter=$((tape_pos+places))
             while [[ -z ${tape[$counter]:-} ]]; do
               tape[$counter]=0
               let counter--
             done
-          fi
+          }
           let tape[tape_pos+places]+=tape[tape_pos]
           let tape[tape_pos]=0
           ;;
@@ -535,13 +535,13 @@ main() {
           amount=${op_data[0]}
           let amount*=tape[tape_pos]
 
-          if (( places > 1 )); then
+          (( places > 1 )) && {
             counter=$((tape_pos+places))
             while [[ -z ${tape[$counter]:-} ]]; do
               tape[$counter]=0
               let counter--
             done
-          fi
+          }
           let tape[tape_pos+places]-=amount
           let tape[tape_pos]=0
           ;;
@@ -629,11 +629,11 @@ main() {
           # position to the character before the lbrace. This way, we'll
           # encounter it as the next character. We then remove that position
           # from the jump stack
-          if (( stack_size > 0 )) ; then
+          (( stack_size > 0 )) && {
             char_pos=$(( stack[stack_size] - 1 ))
             unset stack[${stack_size}]
             let stack_size--
-          fi
+          }
           ;;
 
         "[")
@@ -669,7 +669,7 @@ main() {
       esac
 
       # step, sleep, and/or print
-      if ! (( quiet )); then
+      (( quiet )) || {
         print_tape
 
         if (( step )); then
@@ -680,7 +680,7 @@ main() {
         fi
 
         echo
-      fi
+      }
     fi
 
     let iters++
