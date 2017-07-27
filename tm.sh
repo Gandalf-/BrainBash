@@ -101,7 +101,7 @@ usage() {
 parse_options_and_input() {
   # process flags to set run time variables
 
-  (( $# < 2 )) && { usage; exit; }
+  (( $# < 1 )) && { usage; exit; }
 
   # options
   while [[ "${2:-}" ]]; do
@@ -123,13 +123,8 @@ parse_options_and_input() {
   done
 
   # input file
-  if [[ "${1:-}" ]]; then
-
-    if [[ -e "${1}" ]]; then
-      input="$(cat "$1")"
-    else
-      input="$1"
-    fi
+  if [[ $1 ]]; then
+    input="$1"; [[ -e "$1" ]] && input="$(cat "$1")"
 
   else
     usage
@@ -387,7 +382,7 @@ main() {
 
   else
     tchars=$(grep -v '^[ ]*#.*' <<< "$input" |   # remove comments
-             xargs                           |   # remove newlines
+             xargs -0                        |   # remove newlines
              grep -o .                       |   # separate each character
              grep '[]\+\>\<\[\.\,-]'         |   # remove non-syntax characters
              grep -v '\\'                    |   # remove pesky backslashes
