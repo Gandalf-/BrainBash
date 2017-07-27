@@ -104,7 +104,7 @@ parse_options_and_input() {
   (( $# < 1 )) && { usage; exit; }
 
   # options
-  while [[ "${2:-}" ]]; do
+  while [[ $2 ]]; do
     case $1 in
       -h|--help)      usage; exit         ;;
       -S|--step)      step=1              ;;
@@ -124,8 +124,14 @@ parse_options_and_input() {
 
   # input file
   if [[ $1 ]]; then
-    input="$1"; [[ -e "$1" ]] && input="$(cat "$1")"
-
+    case $1 in
+      -h|--help)
+        usage; exit
+        ;;
+      *)
+        input="$1"; [[ -e "$1" ]] && input="$(cat "$1")"
+        ;;
+    esac
   else
     usage
     exit
@@ -467,7 +473,7 @@ main() {
           let amount*=tape[tape_pos]
 
           (( places > 1 )) && {
-            counter=$((tape_pos+places))
+            let counter=tape_pos+places
             while [[ -z ${tape[$counter]:-} ]]; do
               tape[$counter]=0
               let counter--
@@ -482,7 +488,7 @@ main() {
           places=${chars[$char_pos]::-1}
 
           (( places > 1 )) && {
-            counter=$((tape_pos+places))
+            let counter=tape_pos+places
             while [[ -z ${tape[$counter]:-} ]]; do
               tape[$counter]=0
               let counter--
@@ -541,8 +547,7 @@ main() {
           shifts=${op_data[1]}
           offset=${op_data[2]::-1}
 
-          counter=$(( shifts + offset ))
-
+          let counter=shifts+offset
           while (( copies > 0 )); do
             let tape[tape_pos+counter]+=tape[tape_pos]
             let copies--
