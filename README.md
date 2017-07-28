@@ -45,6 +45,13 @@ variety of advanced Bash features such as:
     -S --step        only advance execution when user presses enter
 ```
 
+### Fast start
+```
+  git clone https://github.com/Gandalf-/BrainBash.git
+  cd BrainBash
+  bash tm.sh -q programs/hello_world.bf
+```
+
 ### Example usage:
 
 These snippets show an example program including user input and the results of
@@ -80,4 +87,49 @@ short. **tm.sh** by default limits execution to 1,000,000 instructions.
   real    0m0.985s
   user    0m0.093s
   sys     0m0.085s
+```
+
+### Example profiler usage:
+
+These snippets show some example output from using the program profiler. The
+program's execution is broken into contiguous sequences of operations that are
+all run the same number of times. Identation corresponds to the level of loop
+depth.
+
+```
+leaf@home ~/g/c/s/BrainBash> bash tm.sh --quiet --profile --print programs/fibonacci.bf
+program: +>+>>>>,[<<<<<[->>+>+<<<]>>>[<<<+>>>-]<<[->>+>+<<<]>>>[-<<<+>>>]<[-<+>]>>[->+<]>-]
+
+input?> 10
+tape  : 1 1 2 3 5 8 13 21 34 55 89 144 0 0 0 0
+
+ % time : instuction(s)
+----------------------------------------------
+   0.08 : +>+>>>>,
+   0.64 :  [<<<<<
+  16.30 :   [->>+>+<<<]
+   0.32 :  >>>
+  14.82 :   [<<<+>>>-]
+   0.21 :  <<
+  25.62 :   [->>+>+<<<]
+   0.32 :  >>>
+  23.29 :   [-<<<+>>>]
+   0.11 :  <
+  13.97 :   [-<+>]
+   0.21 :  >>
+   3.81 :   [->+<]
+   0.32 :  >-]
+
+leaf@home ~/g/c/s/BrainBash> bash tm.sh --quiet --profile --print --Optimize programs/fibonacci.bf
+program: +>+4>,[5<2_1_1C3>3a2<2_1_1C3>3a<1a2>1A>-]
+optimized away 50.0000% of instructions
+
+input?> 20
+tape  : 1 1 2 3 5 8 13 21 34 55 89 144 233 377 610 987 1597 2584 4181 6765 10946 17711 0 0 0 0
+
+ % time : instuction(s)
+----------------------------------------------
+   1.47 : +>+4>,
+  98.53 :  [5<2_1_1C3>3a2<2_1_1C3>3a<1a2>1A>-]
+
 ```
