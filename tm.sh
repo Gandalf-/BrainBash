@@ -35,73 +35,27 @@ export normal="\033[00m"
 # =========================================
 # UTILITY
 # =========================================
-print_tape() {
-  # prints the entire tape, marking the current position green
-
-  local i
-
-  i=0
-  echo -n "tape  : "
-
-  while [[ "${tape[$i]:-}" ]]; do
-
-    if (( i == tape_pos )); then
-      printf "%b%s%b" "$green" "${tape[$i]} " "$normal"
-    else
-      echo -n "${tape[$i]} "
-    fi
-
-    let i++
-  done
-
-  echo
-}
-
-print_chars() {
-  # prints the entire input, marking the current position green
-
-  local i
-
-  i=0
-  echo -n "chars : "
-
-  while [[ "${chars[$i]:-}" ]] ; do
-
-    if (( i == char_pos )); then
-      printf "%b%s%b" "$green" "${chars[$i]} " "$normal"
-    else
-      echo -n "${chars[$i]} "
-    fi
-
-    let i++
-  done
-
-  echo
-}
-
 usage() {
   # shows usage information
 
   echo "
-  usage: bash tm.sh [OPTION]... input_file
+  usage: bash tm.sh [OPTION ...] (input file | program string)
     -c --compile     no execution, write parsed, optimized program to file
     -h --help        show help information
     -i --max_iter x  number of operations to run before early stopping
+    -O --Optimize    apply advanced, heavy optimizations
+    -o --optimize    apply basic optimizations
     -p --print       print out the program before execution
     -P --profile     show instruction execution information
-    -o --optimize    apply basic optimizations
-    -O --Optimize    apply advanced, heavy optimizations
     -q --quiet       suppress execution trace
     -r --raw         treat input as already parsed, use with compiled programs
-    -s --stime x     sleep for x seconds between operations
     -S --step        only advance execution when user presses enter
+    -s --stime x     sleep for x seconds between operations
   "
 }
 
 parse_options_and_input() {
   # process flags to set run time variables
-
-  (( $# < 1 )) && { usage; exit; }
 
   # options
   while [[ $2 ]]; do
@@ -122,20 +76,47 @@ parse_options_and_input() {
     shift
   done
 
-  # input file
-  if [[ $1 ]]; then
-    case $1 in
-      -h|--help)
-        usage; exit
-        ;;
-      *)
-        input="$1"; [[ -e "$1" ]] && input="$(cat "$1")"
-        ;;
-    esac
-  else
-    usage
-    exit
-  fi
+  # input file or program string
+  case $1 in
+    ''|-h|--help) parse_options_and_input _ --help                 ;;
+    *)            input="$1"; [[ -e "$1" ]] && input="$(cat "$1")" ;;
+  esac
+}
+
+print_tape() {
+  # prints the entire tape, marking the current position green
+
+  local i; i=0
+  echo -n "tape  : "
+
+  while [[ ${tape[$i]} ]]; do
+    if (( i == tape_pos )); then
+      printf "%b%s%b" "$green" "${tape[$i]} " "$normal"
+    else
+      echo -n "${tape[$i]} "
+    fi
+    let i++
+  done
+
+  echo
+}
+
+print_chars() {
+  # prints the entire input, marking the current position green
+
+  local i; i=0
+  echo -n "chars : "
+
+  while [[ ${chars[$i]} ]] ; do
+    if (( i == char_pos )); then
+      printf "%b%s%b" "$green" "${chars[$i]} " "$normal"
+    else
+      echo -n "${chars[$i]} "
+    fi
+    let i++
+  done
+
+  echo
 }
 
 run_profiler() {
@@ -153,7 +134,7 @@ run_profiler() {
   echo
   echo " % time : instuction(s)"
   echo "----------------------------------------------"
-  for ((i=1; i < ${#profiler[@]}; i++)); do
+  for (( i=1; i < ${#profiler[@]}; i++ )); do
     new_percent="$( bc -l <<< "${profiler[$i]} / $iters * 100" )"
 
     # attempt to bundle "run together" strings of instructions together
@@ -172,7 +153,7 @@ run_profiler() {
       [[ "${chars[$i]}" == "]" ]] && let b_change--
 
     else
-      size=$(( b_depth + ${#instruction} ))
+      let size=b_depth+${#instruction}
 
       if [[ -z "$sum_percent" ]]; then
         printf '% 7.2f :% *s\n' "$old_percent" "$size" "$instruction"
