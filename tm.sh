@@ -343,22 +343,11 @@ apply_simple_optimizations() {
 # MAIN
 # =========================================
 main() {
-  local input quiet step stime simple_optimize iters max_iters profile
-  local heavy_optimize print compile raw_input execution_started
 
-  input=''
-  quiet=0
-  step=0
-  stime=0
-  max_iters=1000000
-  iters=0
-  simple_optimize=0
-  heavy_optimize=0
-  execution_started=0
-  print=0
-  raw_input=0
-  compile=0
-  profile=0
+  local input='' quiet=0 step=0 stime=0 max_iters=1000000 iters=0
+  local simple_optimize=0 heavy_optimize=0 execution_started=0
+  local print=0 raw_input=0 compile=0 profile=0
+
   tape[0]=0
 
   parse_options_and_input "$@"
@@ -372,7 +361,7 @@ main() {
              xargs -0                        |   # remove newlines
              grep -o .                       |   # separate each character
              grep '[]\+\>\<\[\.\,-]'         |   # remove non-syntax characters
-             grep -v '\\'                    |   # remove pesky backslashes
+             grep -v \\\\                    |   # remove pesky backslashes
              tr -d '\n')                         # back to one line
   fi
   plength=${#tchars}
