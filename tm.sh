@@ -28,8 +28,8 @@ export char_pos=0             # integer, our current position in the input
 export brace_depth=0          # integer, number of nested braces
 export stack_size=0           # integer, size of the stack
 
-export green="\033[01;32m"
-export normal="\033[00m"
+export green=\\0"33[01;32m"
+export normal=\\0"033[00m"
 
 
 # =========================================
@@ -95,7 +95,7 @@ print_tape() {
     else
       echo -n "${tape[$i]} "
     fi
-    let i++
+    (( i++ ))
   done
 
   echo
@@ -113,7 +113,7 @@ print_chars() {
     else
       echo -n "${chars[$i]} "
     fi
-    let i++
+    (( i++ ))
   done
 
   echo
@@ -149,11 +149,11 @@ run_profiler() {
       instruction="${instruction}${chars[$i]}"
       old_percent="$new_percent"
 
-      [[ "${chars[$i]}" == "[" ]] && let b_change++
-      [[ "${chars[$i]}" == "]" ]] && let b_change--
+      [[ "${chars[$i]}" == "[" ]] && (( b_change++ ))
+      [[ "${chars[$i]}" == "]" ]] && (( b_change-- ))
 
     else
-      let size=b_depth+${#instruction}
+      (( size=b_depth+${#instruction} ))
 
       if [[ -z "$sum_percent" ]]; then
         printf '% 7.2f :% *s\n' "$old_percent" "$size" "$instruction"
@@ -165,11 +165,11 @@ run_profiler() {
       old_percent="$new_percent"
       sum_percent=""
 
-      let b_depth+=b_change
+      (( b_depth+=b_change ))
       b_change=0
 
-      [[ "${chars[$i]}" == "]" ]] && let b_depth--
-      [[ "${chars[$i]}" == "[" ]] && let b_depth++
+      [[ "${chars[$i]}" == "]" ]] && (( b_depth-- ))
+      [[ "${chars[$i]}" == "[" ]] && (( b_depth++ ))
     fi
   done
 
@@ -253,7 +253,7 @@ optimize_moves() {
       '>-'*'<')
         places=$(grep -o -- '>' <<< "${move}" | grep -c '>')
         subtraction=$(grep -o -- '-' <<< "${move}" | grep -c '-')
-        let subtraction--   # decrement once for loop decrement
+        (( subtraction-- ))  # decrement once for loop decrement
         tchars=$(sed -e "s/$move/${subtraction}_${places}S/g" <<< "${tchars}")
         ;;
 
@@ -264,10 +264,14 @@ optimize_moves() {
         ;;
 
       *)
-        echo "matched: $(grep -o -- '[>|<][+|-]\+[<|>]' <<< "${move}" | head -n 1)"
+        echo "matched: $(
+          grep -o -- '[>|<][+|-]\+[<|>]' <<< "${move}" | head -n 1)"
         ;;
     esac
-  done < <(grep -o -- "${move_dec}\|${dec_move}" <<< "${tchars}")
+  done < <(
+    # shellcheck disable=SC1117
+    grep -o -- "${move_dec}\|${dec_move}" <<< "${tchars}"
+    )
 }
 
 optimize_copies() {
@@ -294,21 +298,25 @@ optimize_copies() {
       '+<')
         places=1 #$(grep -o -- '>+' <<< "${move}" | grep -c '>+')
         shifts=$(( $(grep -o -- '<' <<< "${move}" | grep -c '<') - copies ))
-        tchars=$(sed -e "s/$move/${copies}_${places}_${shifts}C/g" <<< "${tchars}")
+        tchars=$(
+          sed -e "s/$move/${copies}_${places}_${shifts}C/g" <<< "${tchars}")
         ;;
 
       # copying to the left
       # [-<+<+>>]
       '+>')
         places=$(grep -o -- '<' <<< "${move}" | grep -c '<')
-        let places/=copies
+        (( places/=copies ))
         tchars=$(sed -e "s/$move/${copies}_${places}c/g" <<< "${tchars}")
         ;;
       *)
         echo "fail"
         ;;
     esac
-  done < <(grep -o -- "$copy_dec\|$dec_copy" <<< "${tchars}")
+  done < <(
+    # shellcheck disable=SC1117
+    grep -o -- "$copy_dec\|$dec_copy" <<< "${tchars}"
+    )
 }
 
 apply_heavy_optimizations() {
@@ -360,7 +368,7 @@ main() {
     tchars=$(grep -v '^[ ]*#.*' <<< "$input" |   # remove comments
              xargs -0                        |   # remove newlines
              grep -o .                       |   # separate each character
-             grep '[]\+\>\<\[\.\,-]'         |   # remove non-syntax characters
+             grep '[]\+\>\<\[\.\,-]'         |   # remove non-syntax chars
              grep -v \\\\                    |   # remove pesky backslashes
              tr -d '\n')                         # back to one line
   fi
@@ -389,6 +397,7 @@ main() {
   }
 
   # convert tchar string to array for execution
+  # shellcheck disable=SC2207
   chars=( $(grep -o -- '[_0-9]*.' <<< "$tchars") )
 
   # run the program
@@ -396,12 +405,12 @@ main() {
 
   while [[ ${chars[$char_pos]:-} && $iters -lt $max_iters ]]; do
 
-    let profiler[char_pos]++
+    (( profiler[char_pos]++ ))
 
     if (( brace_depth > 0 )) ; then
       case ${chars[$char_pos]} in
-        "]") let brace_depth-- ;;
-        "[") let brace_depth++ ;;
+        "]") (( brace_depth-- )) ;;
+        "[") (( brace_depth++ )) ;;
       esac
 
     else
@@ -417,40 +426,42 @@ main() {
         [0-9]*'_'[0-9]*'a')
           # many times
           # [-<<+++>>] -> 3_2a
-          op_data=(${chars[$char_pos]//_/ })
+          # shellcheck disable=SC2206
+          op_data=( ${chars[$char_pos]//_/ } )
           places=${op_data[1]::-1}
           amount=${op_data[0]}
 
-          let amount*=tape[tape_pos]
-          let tape[tape_pos-places]+=amount
-          let tape[tape_pos]=0
+          (( amount*=tape[tape_pos] ))
+          (( tape[tape_pos-places]+=amount ))
+          (( tape[tape_pos]=0 ))
           ;;
         [0-9]*'a')
           # once
           # [-<<+>>] 2a
           places=${chars[$char_pos]::-1}
-          let tape[tape_pos-places]+=tape[tape_pos]
-          let tape[tape_pos]=0
+          (( tape[tape_pos-places]+=tape[tape_pos] ))
+          (( tape[tape_pos]=0 ))
           ;;
 
         # composite add to the right
         [0-9]*'_'[0-9]*'A')
           # many times
           # [->>+++<<] -> 3_2A
-          op_data=(${chars[$char_pos]//_/ })
+          # shellcheck disable=SC2206
+          op_data=( ${chars[$char_pos]//_/ } )
           places=${op_data[1]::-1}
           amount=${op_data[0]}
-          let amount*=tape[tape_pos]
+          (( amount*=tape[tape_pos] ))
 
           (( places > 1 )) && {
-            let counter=tape_pos+places
+            (( counter=tape_pos+places ))
             while [[ -z ${tape[$counter]:-} ]]; do
               tape[$counter]=0
-              let counter--
+              (( counter-- ))
             done
           }
-          let tape[tape_pos+places]+=amount
-          let tape[tape_pos]=0
+          (( tape[tape_pos+places]+=amount ))
+          (( tape[tape_pos]=0 ))
           ;;
         [0-9]*'A')
           # once
@@ -458,53 +469,54 @@ main() {
           places=${chars[$char_pos]::-1}
 
           (( places > 1 )) && {
-            let counter=tape_pos+places
+            (( counter=tape_pos+places ))
             while [[ -z ${tape[$counter]:-} ]]; do
               tape[$counter]=0
-              let counter--
+              (( counter-- ))
             done
           }
-          let tape[tape_pos+places]+=tape[tape_pos]
-          let tape[tape_pos]=0
+          (( tape[tape_pos+places]+=tape[tape_pos] ))
+          (( tape[tape_pos]=0 ))
           ;;
 
         [0-9]*'s')
           # composite subtract to the left
           places=${chars[$char_pos]::-1}
-          let tape[tape_pos-places]-=tape[tape_pos]
-          let tape[tape_pos]=0
+          (( tape[tape_pos-places]-=tape[tape_pos] ))
+          (( tape[tape_pos]=0 ))
           ;;
 
         # composite subtract to the right
         [0-9]*'_'[0-9]*'S')
           # many times
           # [->>---<<] -> 3_2S
+          # shellcheck disable=SC2206
           op_data=(${chars[$char_pos]//_/ })
           places=${op_data[1]::-1}
           amount=${op_data[0]}
-          let amount*=tape[tape_pos]
+          (( amount*=tape[tape_pos] ))
 
           (( places > 1 )) && {
             counter=$((tape_pos+places))
             while [[ -z ${tape[$counter]:-} ]]; do
               tape[$counter]=0
-              let counter--
+              (( counter-- ))
             done
           }
-          let tape[tape_pos+places]-=amount
-          let tape[tape_pos]=0
+          (( tape[tape_pos+places]-=amount ))
+          (( tape[tape_pos]=0 ))
           ;;
         [0-9]*'S')
           # once
           places=${chars[$char_pos]::-1}
-          let tape[tape_pos+places]-=tape[tape_pos]
-          let tape[tape_pos]=0
+          (( tape[tape_pos+places]-=tape[tape_pos] ))
+          (( tape[tape_pos]=0 ))
           ;;
 
         Z)
           # composite set this position to zero
           # [-] -> Z
-          let tape[tape_pos]=0
+          (( tape[tape_pos]=0 ))
           ;;
 
         [0-9]*'_'[0-9]*'_'[0-9]*C)
@@ -512,63 +524,65 @@ main() {
           # [->+>+<<]   -> 2_1_0C
           # [->++>++<<]
           # [->>+>+<<<] -> 2_1_1C
+          # shellcheck disable=SC2206
           op_data=(${chars[$char_pos]//_/ })
           copies=${op_data[0]}
           shifts=${op_data[1]}
           offset=${op_data[2]::-1}
 
-          let counter=shifts+offset
+          (( counter=shifts+offset ))
           while (( copies > 0 )); do
-            let tape[tape_pos+counter]+=tape[tape_pos]
-            let copies--
-            let counter+=shifts
+            (( tape[tape_pos+counter]+=tape[tape_pos] ))
+            (( copies-- ))
+            (( counter+=shifts ))
           done
-          let tape[tape_pos]=0
+          (( tape[tape_pos]=0 ))
           ;;
 
         [0-9]*'+')
           # increment this position on the tape many times
           # 5+
-          let tape[tape_pos]+=${chars[$char_pos]::-1}
+          (( tape[tape_pos]+=${chars[$char_pos]::-1} ))
           ;;
         "+")
           # increment this position on the tape
           # +
-          let tape[tape_pos]++
+          (( tape[tape_pos]++ ))
           ;;
 
         [0-9]*'-')
           # - : decrement this position on the tape many times
-          let tape[tape_pos]-=${chars[$char_pos]::-1}
+          (( tape[tape_pos]-=${chars[$char_pos]::-1} ))
           ;;
         "-")
           # - : decrement this position on the tape
-          let tape[tape_pos]--
+          (( tape[tape_pos]-- ))
           ;;
 
         [0-9]*'>')
-          # > : shift tape position to the right many times, check intialization
-          let tape_pos+=${chars[$char_pos]::-1}
+          # > : shift tape position to the right many times,
+          # check initialization
+          (( tape_pos+=${chars[$char_pos]::-1} ))
           counter=$tape_pos
           while [[ -z ${tape[$counter]:-} ]]; do
             tape[$counter]=0
-            let counter--
+            (( counter-- ))
           done
           ;;
         ">")
-          # > : shift tape position to the right once, check intialization
-          let tape_pos++
+          # > : shift tape position to the right once, check initialization
+          (( tape_pos++ ))
           [[ -z ${tape[$tape_pos]:-} ]] && tape[$tape_pos]=0
           ;;
 
         [0-9]*'<')
-          # < : shift tape position to the left many times, check if underflow
-          let tape_pos-=${chars[$char_pos]::-1}
+          # < : shift tape position to the left many times, check underflow
+          (( tape_pos-=${chars[$char_pos]::-1} ))
           (( tape_pos < 0 )) && { echo "error: lshift < 0" ; exit; }
           ;;
         "<")
           # < : shift tape position to the left once, check if underflow
-          let tape_pos--
+          (( tape_pos-- ))
           (( tape_pos < 0 )) && { echo "error: lshift < 0" ; exit; }
           ;;
 
@@ -580,26 +594,26 @@ main() {
           (( stack_size > 0 )) && {
             char_pos=$(( stack[stack_size] - 1 ))
             unset stack[${stack_size}]
-            let stack_size--
+            (( stack_size-- ))
           }
           ;;
 
         "[")
-          # [ : if the current tape value is greater than zero, save our current
-          # position on the stack and run the contents of the loop. Otherwise,
-          # seek to the next rbrace
+          # [ : if the current tape value is greater than zero, save our
+          # current position on the stack and run the contents of the loop.
+          # Otherwise, seek to the next rbrace
           if (( tape[tape_pos] > 0 )); then
-            let stack_size++
+            (( stack_size++ ))
             stack[${stack_size}]=$char_pos
 
           else
-            let brace_depth++
+            (( brace_depth++ ))
           fi
           ;;
 
         ".")
           # . : add current postion to output
-          # shellcheck disable=SC2059
+          # shellcheck disable=SC2059,SC1117
           printf "\x$(printf %x "${tape[$tape_pos]}")"
           #output="${output} ${tape[$tape_pos]}"
           ;;
@@ -612,7 +626,8 @@ main() {
           ;;
 
         *)
-          echo "error: unrecognized instruction: ${chars[$char_pos]}"; exit
+          echo "error: unrecognized instruction: ${chars[$char_pos]}"
+          exit
           ;;
       esac
 
@@ -631,7 +646,7 @@ main() {
       }
     fi
 
-    let iters++
+    (( iters++ ))
     char_pos=$(( char_pos + 1 ))
   done
 
