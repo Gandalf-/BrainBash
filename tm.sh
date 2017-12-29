@@ -132,7 +132,7 @@ run_profiler() {
   b_change=0
 
   echo
-  echo " % time : instuction(s)"
+  echo " % time : instruction(s)"
   echo "----------------------------------------------"
   for (( i=1; i < ${#profiler[@]}; i++ )); do
     new_percent="$( bc -l <<< "${profiler[$i]} / $iters * 100" )"
@@ -279,7 +279,7 @@ optimize_copies() {
   copy_dec='\[-[>]*\(>+\)\+[<]\+\]'
   dec_copy='\[[>]*\(>+\)\+[<]\+\-]'
 
-  # recongize copies
+  # recognize copies
   #   we have to determine the number of copies and where each one is going
   while read -r move; do
 
@@ -321,10 +321,10 @@ optimize_copies() {
 
 apply_heavy_optimizations() {
 
-  # heavy optimzations are more complex
+  # heavy optimizations are more complex
   optimize_moves
 
-  # recongize zeroing
+  # recognize zeroing
   tchars=$(sed -e 's/\[-\]/Z/g' <<< "$tchars")
 
   optimize_copies
@@ -332,10 +332,10 @@ apply_heavy_optimizations() {
 
 apply_simple_optimizations() {
 
-  # simple optimization recongizes repeated instructions and combines them.
+  # simple optimization recognizes repeated instructions and combines them.
   # for example >>>> becomes 4>
 
-  # optimize repeated operations (2 or more occurances)
+  # optimize repeated operations (2 or more occurrences)
   for operation in '---' '+++' '>>>' '<<<'; do
 
     # replace each match with it's simplified form
@@ -355,6 +355,7 @@ main() {
   local input='' quiet=0 step=0 stime=0 max_iters=1000000 iters=0
   local simple_optimize=0 heavy_optimize=0 execution_started=0
   local print=0 raw_input=0 compile=0 profile=0
+  local ops='' percent_fewer_instructions=0 percent_speed_up=0
 
   tape[0]=0
 
@@ -383,9 +384,17 @@ main() {
     echo "program: $tchars"
 
     (( simple_optimize )) && {
-      echo -n "optimized away "
-      echo -n "$(bc -l <<< "scale=4;(1-(${#tchars}/$plength))*100")"
-      echo "% of instructions"
+
+      ops="$(sed 's/[0-9_]*//g' <<< "${tchars[@]}")"
+
+      percent_fewer_instructions="$(
+        bc -l <<< "(1 - (${#ops} / $plength)) * 100" )"
+
+      percent_speed_up="$(
+        bc -l <<< "(1 / (1 - $percent_fewer_instructions / 100) * 100 - 100)")"
+
+      printf "optimized away %.2f%% of instructions; %.0f%% speed up" \
+        "$percent_fewer_instructions" "$percent_speed_up"
     }
     echo
   }
@@ -612,7 +621,7 @@ main() {
           ;;
 
         ".")
-          # . : add current postion to output
+          # . : add current position to output
           # shellcheck disable=SC2059,SC1117
           printf "\x$(printf %x "${tape[$tape_pos]}")"
           #output="${output} ${tape[$tape_pos]}"

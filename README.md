@@ -1,6 +1,18 @@
 ## BrainBash
 
-A Brainf\*\*k interpreter in pure Bash
+A **fast** Brainf\*\*k interpreter in pure Bash
+
+```
+I leaf@home ~/g/c/s/BrainBash> bash tm.sh -q -p -P -O programs/optimize.bf
+
+program: 25+50_1A>15_5A
+optimzed away 96.33% of instructions; 2625% speed up
+tape  : 0 0 0 0 0 0 18750
+
+ % time : instuction(s)
+----------------------------------------------
+ 100.00 : 25+50_1A>15_5A
+```
 
 
 ### Bash?
@@ -70,7 +82,7 @@ short. **tm.sh** by default limits execution to 1,000,000 instructions.
 
   leaf@home ~/g/c/s/BrainBash> time bash tm.sh -p -q -o programs/fibonacci.bf
   program: +>+4>,[5<[-2>+>+3<]3>[3<+3>-]2<[-2>+>+3<]3>[-3<+3>]<[-<+>]2>[->+<]>-]
-  optimized away 15.8600% of instructions
+  optimized away 32.9300% of instructions; 49% speed up
   input?> 20
   tape  : 1 1 2 3 5 8 13 21 34 55 89 144 233 377 610 987 1597 2584 4181 6765 10946 17711 0 0 0 0
 
@@ -80,7 +92,7 @@ short. **tm.sh** by default limits execution to 1,000,000 instructions.
 
   leaf@home ~/g/c/s/BrainBash> time bash tm.sh -p -q -O programs/fibonacci.bf
   program: +>+4>,[5<2_1_1C3>3a2<2_1_1C3>3a<1a2>1A>-]
-  optimized away 50.0000% of instructions
+  optimized away 74.4000% of instructions; 290% speed up
   input?> 20
   tape  : 1 1 2 3 5 8 13 21 34 55 89 144 233 377 610 987 1597 2584 4181 6765 10946 17711 0 0 0 0
 
@@ -122,7 +134,7 @@ tape  : 1 1 2 3 5 8 13 21 34 55 89 144 0 0 0 0
 
 leaf@home ~/g/c/s/BrainBash> bash tm.sh --quiet --profile --print --Optimize programs/fibonacci.bf
 program: +>+4>,[5<2_1_1C3>3a2<2_1_1C3>3a<1a2>1A>-]
-optimized away 50.0000% of instructions
+optimized away 74.4000% of instructions; 290% speed up
 
 input?> 20
 tape  : 1 1 2 3 5 8 13 21 34 55 89 144 233 377 610 987 1597 2584 4181 6765 10946 17711 0 0 0 0
