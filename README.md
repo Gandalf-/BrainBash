@@ -1,15 +1,21 @@
 ## BrainBash
 
-A **fast** Brainf\*\*k interpreter in pure Bash
+A **_fast_** Brainf\*\*k interpreter in pure Bash
 
 ```
+I leaf@home ~/g/c/s/BrainBash> cat programs/optimize.bf
++++++ +++++ +++++ +++++ +++++
+[ - > +++++ +++++ +++++ +++++ +++++ +++++ +++++ +++++ +++++ +++++ < ]
+>
+[ - >>>>> +++++ +++++ +++++ <<<<< ]
+
 I leaf@home ~/g/c/s/BrainBash> bash tm.sh -q -p -P -O programs/optimize.bf
 
 program: 25+50_1A>15_5A
 optimzed away 96.33% of instructions; 2625% speed up
 tape  : 0 0 0 0 0 0 18750
 
- % time : instuction(s)
+ % time : instruction(s)
 ----------------------------------------------
  100.00 : 25+50_1A>15_5A
 ```
@@ -105,7 +111,7 @@ short. **tm.sh** by default limits execution to 1,000,000 instructions.
 
 These snippets show some example output from using the program profiler. The
 program's execution is broken into contiguous sequences of operations that are
-all run the same number of times. Identation corresponds to the level of loop
+all run the same number of times. Indentation corresponds to the level of loop
 depth.
 
 ```
