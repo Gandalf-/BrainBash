@@ -354,7 +354,7 @@ main() {
 
   local input='' quiet=0 step=0 stime=0 max_iters=1000000 iters=0
   local simple_optimize=0 heavy_optimize=0 execution_started=0
-  local print=0 raw_input=0 compile=0 profile=0
+  local print=0 raw_input=0 compile=0 profile=0 counter=0
   local ops='' percent_fewer_instructions=0 percent_speed_up=0
 
   tape[0]=0
@@ -440,16 +440,16 @@ main() {
           places=${op_data[1]::-1}
           amount=${op_data[0]}
 
-          (( amount*=tape[tape_pos] ))
-          (( tape[tape_pos-places]+=amount ))
-          (( tape[tape_pos]=0 ))
+          (( amount *= tape[tape_pos] ))
+          (( tape[tape_pos-places] += amount ))
+          (( tape[tape_pos] = 0 ))
           ;;
         [0-9]*'a')
           # once
           # [-<<+>>] 2a
           places=${chars[$char_pos]::-1}
-          (( tape[tape_pos-places]+=tape[tape_pos] ))
-          (( tape[tape_pos]=0 ))
+          (( tape[tape_pos-places] += tape[tape_pos] ))
+          (( tape[tape_pos] = 0 ))
           ;;
 
         # composite add to the right
@@ -460,17 +460,21 @@ main() {
           op_data=( ${chars[$char_pos]//_/ } )
           places=${op_data[1]::-1}
           amount=${op_data[0]}
-          (( amount*=tape[tape_pos] ))
+          (( amount *= tape[tape_pos] ))
 
-          (( places > 1 )) && {
-            (( counter=tape_pos+places ))
+          if (( places > 1 )); then
+            (( counter = tape_pos + places ))
             while [[ -z ${tape[$counter]:-} ]]; do
-              tape[$counter]=0
-              (( counter-- ))
+              ((
+                tape[counter] = 0,
+                counter--
+              ))
             done
-          }
-          (( tape[tape_pos+places]+=amount ))
-          (( tape[tape_pos]=0 ))
+          fi
+          ((
+            tape[tape_pos + places] += amount,
+            tape[tape_pos] = 0
+          ))
           ;;
         [0-9]*'A')
           # once
@@ -480,19 +484,25 @@ main() {
           (( places > 1 )) && {
             (( counter=tape_pos+places ))
             while [[ -z ${tape[$counter]:-} ]]; do
-              tape[$counter]=0
-              (( counter-- ))
+              ((
+                tape[counter] = 0,
+                counter--
+              ))
             done
           }
-          (( tape[tape_pos+places]+=tape[tape_pos] ))
-          (( tape[tape_pos]=0 ))
+          ((
+            tape[tape_pos + places] += tape[tape_pos],
+            tape[tape_pos] = 0
+          ))
           ;;
 
         [0-9]*'s')
           # composite subtract to the left
-          places=${chars[$char_pos]::-1}
-          (( tape[tape_pos-places]-=tape[tape_pos] ))
-          (( tape[tape_pos]=0 ))
+          ((
+            places = ${chars[$char_pos]::-1},
+            tape[tape_pos - places] -= tape[tape_pos],
+            tape[tape_pos] = 0
+          ))
           ;;
 
         # composite subtract to the right
@@ -503,29 +513,35 @@ main() {
           op_data=(${chars[$char_pos]//_/ })
           places=${op_data[1]::-1}
           amount=${op_data[0]}
-          (( amount*=tape[tape_pos] ))
+          (( amount *= tape[tape_pos] ))
 
-          (( places > 1 )) && {
-            counter=$((tape_pos+places))
+          if (( places > 1 )); then
+            (( counter = tape_pos + places ))
             while [[ -z ${tape[$counter]:-} ]]; do
-              tape[$counter]=0
-              (( counter-- ))
+              ((
+                tape[counter] = 0,
+                counter--
+              ))
             done
-          }
-          (( tape[tape_pos+places]-=amount ))
-          (( tape[tape_pos]=0 ))
+          fi
+          ((
+            tape[tape_pos+places] -= amount,
+            tape[tape_pos]=0
+          ))
           ;;
         [0-9]*'S')
           # once
-          places=${chars[$char_pos]::-1}
-          (( tape[tape_pos+places]-=tape[tape_pos] ))
-          (( tape[tape_pos]=0 ))
+          ((
+            places = ${chars[char_pos]::-1},
+            tape[tape_pos + places] -= tape[tape_pos],
+            tape[tape_pos] = 0
+          ))
           ;;
 
         Z)
           # composite set this position to zero
           # [-] -> Z
-          (( tape[tape_pos]=0 ))
+          (( tape[tape_pos] = 0 ))
           ;;
 
         [0-9]*'_'[0-9]*'_'[0-9]*C)
@@ -534,24 +550,23 @@ main() {
           # [->++>++<<]
           # [->>+>+<<<] -> 2_1_1C
           # shellcheck disable=SC2206
-          op_data=(${chars[$char_pos]//_/ })
-          copies=${op_data[0]}
-          shifts=${op_data[1]}
-          offset=${op_data[2]::-1}
+          IFS=_ read -r copies shifts offset <<< "${chars[$char_pos]//C/ }"
 
-          (( counter=shifts+offset ))
+          (( counter = shifts + offset ))
           while (( copies > 0 )); do
-            (( tape[tape_pos+counter]+=tape[tape_pos] ))
-            (( copies-- ))
-            (( counter+=shifts ))
+            ((
+              tape[tape_pos + counter] += tape[tape_pos],
+              copies--,
+              counter += shifts
+            ))
           done
-          (( tape[tape_pos]=0 ))
+          (( tape[tape_pos] = 0 ))
           ;;
 
         [0-9]*'+')
           # increment this position on the tape many times
           # 5+
-          (( tape[tape_pos]+=${chars[$char_pos]::-1} ))
+          (( tape[tape_pos] += ${chars[char_pos]::-1} ))
           ;;
         "+")
           # increment this position on the tape
@@ -561,7 +576,7 @@ main() {
 
         [0-9]*'-')
           # - : decrement this position on the tape many times
-          (( tape[tape_pos]-=${chars[$char_pos]::-1} ))
+          (( tape[tape_pos] -= ${chars[char_pos]::-1} ))
           ;;
         "-")
           # - : decrement this position on the tape
@@ -571,22 +586,27 @@ main() {
         [0-9]*'>')
           # > : shift tape position to the right many times,
           # check initialization
-          (( tape_pos+=${chars[$char_pos]::-1} ))
-          counter=$tape_pos
-          while [[ -z ${tape[$counter]:-} ]]; do
-            tape[$counter]=0
-            (( counter-- ))
+          ((
+            tape_pos += ${chars[char_pos]::-1},
+            counter = tape_pos
+          ))
+          while [[ -z ${tape[counter]} ]]; do
+            ((
+              tape[counter] = 0,
+              counter--
+            ))
           done
           ;;
         ">")
           # > : shift tape position to the right once, check initialization
           (( tape_pos++ ))
-          [[ -z ${tape[$tape_pos]:-} ]] && tape[$tape_pos]=0
+          [[ ${tape[$tape_pos]} ]] || (( tape[tape_pos] = 0 ))
           ;;
 
         [0-9]*'<')
           # < : shift tape position to the left many times, check underflow
-          (( tape_pos-=${chars[$char_pos]::-1} ))
+          # (( tape_pos -= ${chars[$char_pos]::-1} ))
+          (( tape_pos -= ${chars[char_pos]::-1} ))
           (( tape_pos < 0 )) && { echo "error: lshift < 0" ; exit; }
           ;;
         "<")
@@ -600,11 +620,11 @@ main() {
           # position to the character before the lbrace. This way, we'll
           # encounter it as the next character. We then remove that position
           # from the jump stack
-          (( stack_size > 0 )) && {
-            char_pos=$(( stack[stack_size] - 1 ))
+          if (( stack_size > 0 )); then
+            (( char_pos = stack[stack_size] - 1 ))
             unset stack[${stack_size}]
             (( stack_size-- ))
-          }
+          fi
           ;;
 
         "[")
@@ -612,8 +632,10 @@ main() {
           # current position on the stack and run the contents of the loop.
           # Otherwise, seek to the next rbrace
           if (( tape[tape_pos] > 0 )); then
-            (( stack_size++ ))
-            stack[${stack_size}]=$char_pos
+            ((
+              stack_size++,
+              stack[stack_size] = char_pos
+            ))
 
           else
             (( brace_depth++ ))
