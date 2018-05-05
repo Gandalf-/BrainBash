@@ -1,5 +1,7 @@
 ## BrainBash
 
+[![Build Status](https://travis-ci.org/Gandalf-/BrainBash.svg?branch=master)](https://travis-ci.org/Gandalf-/BrainBash)
+
 A **_fast_** Brainf\*\*k interpreter in pure Bash
 
 ```
