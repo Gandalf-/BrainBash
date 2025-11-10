@@ -69,11 +69,11 @@ parse_options_and_input() {
     exit 0
   fi
 
-  # options
-  while [[ $2 ]]; do
+  # options - process while arguments look like flags
+  while [[ $1 == -* ]] && [[ -n $1 ]]; do
     case $1 in
       -h|--help)      usage >&2; exit 0   ;;
-      -S|--step)      step=1              ;;
+      -S|--step)      step=1; shift       ;;
       -s|--stime)
         shift
         if [[ ! $1 =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
@@ -81,14 +81,15 @@ parse_options_and_input() {
           exit 1
         fi
         stime=$1
+        shift
         ;;
-      -p|--print)     print=1             ;;
-      -P|--profile)   profile=1           ;;
-      -c|--compile)   compile=1           ;;
-      -r|--raw)       raw_input=1         ;;
-      -q|--quiet)     quiet=1             ;;
-      -o|--optimize)  simple_optimize=1   ;;
-      -O|--Optimize)  heavy_optimize=1    ;;
+      -p|--print)     print=1; shift      ;;
+      -P|--profile)   profile=1; shift    ;;
+      -c|--compile)   compile=1; shift    ;;
+      -r|--raw)       raw_input=1; shift  ;;
+      -q|--quiet)     quiet=1; shift      ;;
+      -o|--optimize)  simple_optimize=1; shift   ;;
+      -O|--Optimize)  heavy_optimize=1; shift    ;;
       -i|--max_iter)
         shift
         if [[ ! $1 =~ ^[0-9]+$ ]]; then
@@ -96,17 +97,28 @@ parse_options_and_input() {
           exit 1
         fi
         max_iters=$1
+        shift
         ;;
       *)              usage >&2; exit 1   ;;
     esac
-    shift
   done
 
   # input file or program string
   case $1 in
     '')           usage >&2; exit 1                                 ;;
     *)            input_file="$1"
-                  input="$1"; [[ -e "$1" ]] && input="$(cat "$1")" ;;
+                  # If it looks like a file path, check if it exists
+                  if [[ "$1" == *"/"* || "$1" == *.bf ]]; then
+                    if [[ ! -e "$1" ]]; then
+                      echo "error: file not found: $1" >&2
+                      exit 1
+                    fi
+                    input="$(cat "$1")"
+                  else
+                    # Otherwise treat as program string
+                    input="$1"
+                  fi
+                  ;;
   esac
 }
 

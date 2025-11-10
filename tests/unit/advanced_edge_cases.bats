@@ -47,11 +47,16 @@ load '../helpers/test_helper'
 # File Handling Errors
 # ==================================================
 
-@test "non-existent file fails gracefully" {
+@test "non-existent file with .bf extension errors" {
   run bash "$TM_SH" -q /nonexistent/file/path.bf
-  assert_success
-  # It treats the path as a program string, not an error
-  assert_output --partial "tape"
+  assert_failure
+  assert_output --partial "error: file not found"
+}
+
+@test "non-existent file with path separator errors" {
+  run bash "$TM_SH" -q /nonexistent/path
+  assert_failure
+  assert_output --partial "error: file not found"
 }
 
 @test "reading from /dev/null produces empty program" {

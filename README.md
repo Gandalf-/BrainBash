@@ -44,6 +44,12 @@ variety of advanced Bash features such as:
 - compilation, in the way of saving optimizations for later
 - built in execution profiler
 
+### Implementation Notes
+
+**tm.sh** differs from the canonical Brainf\*\*k specification in the following ways:
+- **64-bit integer cells**: Tape cells use Bash's native 64-bit signed integer arithmetic instead of 8-bit bytes. Values don't wrap at 255 and can be negative (e.g., decrementing from 0 produces -1, not 255).
+- **File handling**: Inputs containing `/` or ending in `.bf` are treated as file paths and must exist. Other inputs are treated as Brainf\*\*k program strings.
+
 ### Options
 
 **tm.sh** provides a number of options:
