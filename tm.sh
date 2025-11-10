@@ -57,10 +57,16 @@ usage() {
 parse_options_and_input() {
   # process flags to set run time variables
 
+  # Handle help flag when it's the only argument
+  if [[ $1 == '-h' || $1 == '--help' ]]; then
+    usage >&2
+    exit 0
+  fi
+
   # options
   while [[ $2 ]]; do
     case $1 in
-      -h|--help)      usage; exit 0       ;;
+      -h|--help)      usage >&2; exit 0   ;;
       -S|--step)      step=1              ;;
       -s|--stime)     shift; stime=$1     ;;
       -p|--print)     print=1             ;;
@@ -71,14 +77,14 @@ parse_options_and_input() {
       -o|--optimize)  simple_optimize=1   ;;
       -O|--Optimize)  heavy_optimize=1    ;;
       -i|--max_iter)  shift; max_iters=$1 ;;
-      *)              usage; exit 1       ;;
+      *)              usage >&2; exit 1   ;;
     esac
     shift
   done
 
   # input file or program string
   case $1 in
-    ''|-h|--help) parse_options_and_input _ --help                 ;;
+    '')           usage >&2; exit 1                                 ;;
     *)            input="$1"; [[ -e "$1" ]] && input="$(cat "$1")" ;;
   esac
 }
