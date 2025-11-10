@@ -91,7 +91,8 @@ parse_options_and_input() {
   # input file or program string
   case $1 in
     '')           usage >&2; exit 1                                 ;;
-    *)            input="$1"; [[ -e "$1" ]] && input="$(cat "$1")" ;;
+    *)            input_file="$1"
+                  input="$1"; [[ -e "$1" ]] && input="$(cat "$1")" ;;
   esac
 }
 
@@ -413,7 +414,7 @@ main() {
 
   # compile option writes a new program file for use with the -r option
   (( compile )) && {
-    echo "${tchars}" > "$input".raw
+    echo "${tchars}" > "$input_file".raw
     exit 0
   }
 

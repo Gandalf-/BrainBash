@@ -65,10 +65,55 @@ load '../helpers/test_helper'
   assert_output --partial "tape"
 }
 
-@test "compile and raw mode workflow" {
-  # Test that compile flag exits without error
-  run bash "$TM_SH" -c <(echo "+++")
+@test "compile mode creates correct output file" {
+  local tmpdir=$(mktemp -d)
+  local input="$tmpdir/test.bf"
+  echo "+++>++>+" > "$input"
+
+  run bash "$TM_SH" -c "$input"
   assert_success
+
+  # Check that .raw file was created with correct name
+  [[ -f "$input.raw" ]]
+
+  # Check that compiled program has content
+  [[ -s "$input.raw" ]]
+
+  # Clean up
+  rm -rf "$tmpdir"
+}
+
+@test "raw mode executes compiled program" {
+  local tmpdir=$(mktemp -d)
+  local input="$tmpdir/test.bf"
+  echo "+++>++>+" > "$input"
+
+  # First compile
+  bash "$TM_SH" -c "$input"
+
+  # Then execute raw
+  run bash "$TM_SH" -q -r "$input.raw"
+  assert_success
+  assert_output --partial "tape  : 3 2 1"
+
+  # Clean up
+  rm -rf "$tmpdir"
+}
+
+@test "compile with optimization produces optimized raw file" {
+  local tmpdir=$(mktemp -d)
+  local input="$tmpdir/test.bf"
+  echo "++++" > "$input"
+
+  # Compile with optimization
+  bash "$TM_SH" -c -o "$input"
+
+  # Raw file should contain optimized form
+  local content=$(cat "$input.raw")
+  [[ "$content" == "4+" ]]
+
+  # Clean up
+  rm -rf "$tmpdir"
 }
 
 @test "optimization preserves program semantics" {

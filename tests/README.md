@@ -52,7 +52,7 @@ tests/bats/bin/bats tests/unit/basic_operations.bats --filter "increment"
 
 ## Test Coverage
 
-### Unit Tests (55 tests)
+### Unit Tests (57 tests)
 
 **basic_operations.bats** (15 tests) - Core Brainfuck operations:
 - Increment/decrement operations (+/-)
@@ -68,7 +68,7 @@ tests/bats/bin/bats tests/unit/basic_operations.bats --filter "increment"
 - Equivalence testing (optimized vs non-optimized output)
 - Pattern recognition (moves, copies, zeroing)
 
-**cli_options.bats** (10 tests) - Command-line options:
+**cli_options.bats** (12 tests) - Command-line options:
 - Help and usage display
 - Optimization flags (-o, -O)
 - Print and profile flags (-p, -P)
@@ -110,11 +110,11 @@ tests/bats/bin/bats tests/unit/basic_operations.bats --filter "increment"
 
 ## Test Statistics
 
-- **Total Tests**: 64
-- **Unit Tests**: 55
+- **Total Tests**: 66
+- **Unit Tests**: 57
   - Basic Operations: 15
   - Optimizations: 28
-  - CLI Options: 10
+  - CLI Options: 12
   - Edge Cases: 12
 - **Integration Tests**: 9
 - **Test Execution Time**: ~10-15 seconds
