@@ -163,10 +163,12 @@ run_profiler() {
   # useful for finding heavily repeated loops
 
   local instruction new_percent old_percent sum_percent b_depth size
+  local new_percent_int old_percent_int sum_percent_int
 
   instruction=${chars[0]}
-  old_percent="$( bc -l <<< "${profiler[0]} / $iters * 100" )"
-  sum_percent=""
+  # Calculate percentage scaled by 100 (so 50.25% becomes 5025)
+  old_percent_int=$(( profiler[0] * 10000 / iters ))
+  sum_percent_int=0
   b_depth=1
   b_change=0
 
@@ -174,19 +176,19 @@ run_profiler() {
   echo " % time : instruction(s)"
   echo "----------------------------------------------"
   for (( i=1; i < ${#profiler[@]}; i++ )); do
-    new_percent="$( bc -l <<< "${profiler[$i]} / $iters * 100" )"
+    new_percent_int=$(( profiler[i] * 10000 / iters ))
 
     # attempt to bundle "run together" strings of instructions together
     # "run together" means contiguous instructions with the same frequency
-    if [[ "$new_percent" == "$old_percent" ]]; then
-      if [[ -z "$sum_percent" ]]; then
-        sum_percent="$(bc -l <<< "$old_percent + $new_percent")"
+    if [[ "$new_percent_int" == "$old_percent_int" ]]; then
+      if (( sum_percent_int == 0 )); then
+        (( sum_percent_int = old_percent_int + new_percent_int ))
       else
-        sum_percent="$(bc -l <<< "$sum_percent + $new_percent")"
+        (( sum_percent_int += new_percent_int ))
       fi
 
       instruction="${instruction}${chars[$i]}"
-      old_percent="$new_percent"
+      old_percent_int=$new_percent_int
 
       [[ "${chars[$i]}" == "[" ]] && (( b_change++ ))
       [[ "${chars[$i]}" == "]" ]] && (( b_change-- ))
@@ -194,15 +196,15 @@ run_profiler() {
     else
       (( size=b_depth+${#instruction} ))
 
-      if [[ -z "$sum_percent" ]]; then
-        printf '% 7.2f :% *s\n' "$old_percent" "$size" "$instruction"
+      if (( sum_percent_int == 0 )); then
+        printf '% 4d.%02d :% *s\n' "$((old_percent_int / 100))" "$((old_percent_int % 100))" "$size" "$instruction"
       else
-        printf '% 7.2f :% *s\n' "$sum_percent" "$size" "$instruction"
+        printf '% 4d.%02d :% *s\n' "$((sum_percent_int / 100))" "$((sum_percent_int % 100))" "$size" "$instruction"
       fi
 
       instruction="${chars[$i]}"
-      old_percent="$new_percent"
-      sum_percent=""
+      old_percent_int=$new_percent_int
+      sum_percent_int=0
 
       (( b_depth+=b_change ))
       b_change=0
@@ -214,10 +216,10 @@ run_profiler() {
 
   size=$(( b_depth + ${#instruction} ))
 
-  if [[ -z "$sum_percent" ]]; then
-    printf '% 7.2f :% *s\n' "$old_percent" "$size" "$instruction"
+  if (( sum_percent_int == 0 )); then
+    printf '% 4d.%02d :% *s\n' "$((old_percent_int / 100))" "$((old_percent_int % 100))" "$size" "$instruction"
   else
-    printf '% 7.2f :% *s\n' "$sum_percent" "$size" "$instruction"
+    printf '% 4d.%02d :% *s\n' "$((sum_percent_int / 100))" "$((sum_percent_int % 100))" "$size" "$instruction"
   fi
 }
 
@@ -426,14 +428,14 @@ main() {
 
       ops="$(sed 's/[0-9_]*//g' <<< "${tchars[@]}")"
 
-      percent_fewer_instructions="$(
-        bc -l <<< "(1 - (${#ops} / $plength)) * 100" )"
+      # Calculate percentages using Bash integer arithmetic (scaled by 100)
+      local pct_fewer_scaled pct_speedup_scaled
+      pct_fewer_scaled=$(( 10000 - (${#ops} * 10000 / plength) ))
+      pct_speedup_scaled=$(( (10000 * 10000 / (10000 - pct_fewer_scaled)) - 10000 ))
 
-      percent_speed_up="$(
-        bc -l <<< "(1 / (1 - $percent_fewer_instructions / 100) * 100 - 100)")"
-
-      printf "optimized away %.2f%% of instructions; %.0f%% speed up" \
-        "$percent_fewer_instructions" "$percent_speed_up"
+      printf "optimized away %d.%02d%% of instructions; %d%% speed up" \
+        "$((pct_fewer_scaled / 100))" "$((pct_fewer_scaled % 100))" \
+        "$((pct_speedup_scaled / 100))"
     }
     echo
   }
