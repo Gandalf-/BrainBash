@@ -74,7 +74,14 @@ parse_options_and_input() {
     case $1 in
       -h|--help)      usage >&2; exit 0   ;;
       -S|--step)      step=1              ;;
-      -s|--stime)     shift; stime=$1     ;;
+      -s|--stime)
+        shift
+        if [[ ! $1 =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
+          echo "error: -s requires a numeric argument" >&2
+          exit 1
+        fi
+        stime=$1
+        ;;
       -p|--print)     print=1             ;;
       -P|--profile)   profile=1           ;;
       -c|--compile)   compile=1           ;;
@@ -82,7 +89,14 @@ parse_options_and_input() {
       -q|--quiet)     quiet=1             ;;
       -o|--optimize)  simple_optimize=1   ;;
       -O|--Optimize)  heavy_optimize=1    ;;
-      -i|--max_iter)  shift; max_iters=$1 ;;
+      -i|--max_iter)
+        shift
+        if [[ ! $1 =~ ^[0-9]+$ ]]; then
+          echo "error: -i requires a positive integer" >&2
+          exit 1
+        fi
+        max_iters=$1
+        ;;
       *)              usage >&2; exit 1   ;;
     esac
     shift
@@ -365,7 +379,7 @@ apply_simple_optimizations() {
 # =========================================
 main() {
 
-  local input='' quiet=0 step=0 stime=0 max_iters=1000000 iters=0
+  local input='' input_file='' quiet=0 step=0 stime=0 max_iters=1000000 iters=0
   local simple_optimize=0 heavy_optimize=0 execution_started=0
   local print=0 raw_input=0 compile=0 profile=0 counter=0
   local ops='' percent_fewer_instructions=0 percent_speed_up=0
@@ -620,12 +634,12 @@ main() {
           # < : shift tape position to the left many times, check underflow
           # (( tape_pos -= ${chars[$char_pos]::-1} ))
           (( tape_pos -= ${chars[char_pos]::-1} ))
-          (( tape_pos < 0 )) && { echo "error: lshift < 0" ; exit 1; }
+          (( tape_pos < 0 )) && { echo "error: lshift < 0" >&2 ; exit 1; }
           ;;
         "<")
           # < : shift tape position to the left once, check if underflow
           (( tape_pos-- ))
-          (( tape_pos < 0 )) && { echo "error: lshift < 0" ; exit 1; }
+          (( tape_pos < 0 )) && { echo "error: lshift < 0" >&2 ; exit 1; }
           ;;
 
         "]")
@@ -670,7 +684,7 @@ main() {
           ;;
 
         *)
-          echo "error: unrecognized instruction: ${chars[$char_pos]}"
+          echo "error: unrecognized instruction: ${chars[$char_pos]}" >&2
           exit 1
           ;;
       esac
@@ -694,7 +708,13 @@ main() {
     char_pos=$(( char_pos + 1 ))
   done
 
-  (( iters == max_iters )) && echo "iteration maximum reached: $max_iters"
+  (( iters == max_iters )) && {
+    echo "iteration maximum reached: $max_iters" >&2
+    print_tape
+    (( quiet )) || echo "operations: $iters"
+    (( profile )) && run_profiler
+    exit 1
+  }
 
   shut_down
 }

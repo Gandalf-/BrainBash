@@ -23,7 +23,7 @@ load '../helpers/test_helper'
 @test "max iterations flag limits execution" {
   # This program would run forever without iteration limit
   run bash "$TM_SH" -q -i 100 <(echo "+[+]")
-  assert_success
+  assert_failure
   assert_output --partial "iteration maximum reached: 100"
 }
 
