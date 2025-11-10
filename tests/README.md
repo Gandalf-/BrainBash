@@ -75,17 +75,6 @@ tests/bats/bin/bats tests/unit/basic_operations.bats --filter "increment"
 
 ## Known Issues
 
-### Exit Code Behavior
-The tm.sh interpreter currently exits with status 1 on successful execution and status 0 on errors. Tests have been written to work around this behavior, but this should be fixed in tm.sh:
-
-```bash
-# In tm.sh, errors should exit with non-zero:
-(( tape_pos < 0 )) && { echo "error: lshift < 0" ; exit 1; }  # Not: exit
-
-# In tm.sh shut_down function, should exit cleanly:
-exit 0  # Not: exit
-```
-
 ### Color Codes in Output
 Tests strip ANSI color codes from output since tm.sh always outputs colors regardless of TTY status or quiet mode.
 

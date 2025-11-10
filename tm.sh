@@ -60,7 +60,7 @@ parse_options_and_input() {
   # options
   while [[ $2 ]]; do
     case $1 in
-      -h|--help)      usage; exit         ;;
+      -h|--help)      usage; exit 0       ;;
       -S|--step)      step=1              ;;
       -s|--stime)     shift; stime=$1     ;;
       -p|--print)     print=1             ;;
@@ -71,7 +71,7 @@ parse_options_and_input() {
       -o|--optimize)  simple_optimize=1   ;;
       -O|--Optimize)  heavy_optimize=1    ;;
       -i|--max_iter)  shift; max_iters=$1 ;;
-      *)              usage; exit         ;;
+      *)              usage; exit 1       ;;
     esac
     shift
   done
@@ -192,7 +192,7 @@ shut_down() {
     # profiler output
     (( profile )) && run_profiler
   }
-  exit
+  exit 0
 }
 
 # =========================================
@@ -402,7 +402,7 @@ main() {
   # compile option writes a new program file for use with the -r option
   (( compile )) && {
     echo "${tchars}" > "$input".raw
-    exit
+    exit 0
   }
 
   # convert tchar string to array for execution
@@ -607,12 +607,12 @@ main() {
           # < : shift tape position to the left many times, check underflow
           # (( tape_pos -= ${chars[$char_pos]::-1} ))
           (( tape_pos -= ${chars[char_pos]::-1} ))
-          (( tape_pos < 0 )) && { echo "error: lshift < 0" ; exit; }
+          (( tape_pos < 0 )) && { echo "error: lshift < 0" ; exit 1; }
           ;;
         "<")
           # < : shift tape position to the left once, check if underflow
           (( tape_pos-- ))
-          (( tape_pos < 0 )) && { echo "error: lshift < 0" ; exit; }
+          (( tape_pos < 0 )) && { echo "error: lshift < 0" ; exit 1; }
           ;;
 
         "]")
@@ -658,7 +658,7 @@ main() {
 
         *)
           echo "error: unrecognized instruction: ${chars[$char_pos]}"
-          exit
+          exit 1
           ;;
       esac
 

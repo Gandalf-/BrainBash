@@ -13,37 +13,43 @@ load '../helpers/test_helper'
 }
 
 @test "simple.bf executes without error" {
-  result=$(bash "$TM_SH" -q "$PROGRAMS_DIR/simple.bf" 2>&1 || true)
-  # Just verify it produces tape output (doesn't crash)
-  [[ "$result" == *"tape"* ]]
+  run bash "$TM_SH" -q "$PROGRAMS_DIR/simple.bf"
+  assert_success
+  assert_output --partial "tape"
 }
 
 @test "loop.bf executes without error" {
-  result=$(bash "$TM_SH" -q "$PROGRAMS_DIR/loop.bf" 2>&1 || true)
-  [[ "$result" == *"tape"* ]]
+  run bash "$TM_SH" -q "$PROGRAMS_DIR/loop.bf"
+  assert_success
+  assert_output --partial "tape"
 }
 
 @test "nested_loop.bf executes without error" {
-  result=$(bash "$TM_SH" -q "$PROGRAMS_DIR/nested_loop.bf" 2>&1 || true)
-  [[ "$result" == *"tape"* ]]
+  run bash "$TM_SH" -q "$PROGRAMS_DIR/nested_loop.bf"
+  assert_success
+  assert_output --partial "tape"
 }
 
 @test "optimize.bf executes without error" {
-  result=$(bash "$TM_SH" -q "$PROGRAMS_DIR/optimize.bf" 2>&1 || true)
-  [[ "$result" == *"tape"* ]]
+  run bash "$TM_SH" -q "$PROGRAMS_DIR/optimize.bf"
+  assert_success
+  assert_output --partial "tape"
 }
 
 @test "multiply.bf executes without error" {
-  result=$(bash "$TM_SH" -q "$PROGRAMS_DIR/multiply.bf" 2>&1 || true)
-  [[ "$result" == *"tape"* ]]
+  run bash "$TM_SH" -q "$PROGRAMS_DIR/multiply.bf"
+  assert_success
+  assert_output --partial "tape"
 }
 
 @test "copy.bf executes without error" {
-  result=$(bash "$TM_SH" -q "$PROGRAMS_DIR/copy.bf" 2>&1 || true)
-  [[ "$result" == *"tape"* ]]
+  run bash "$TM_SH" -q "$PROGRAMS_DIR/copy.bf"
+  assert_success
+  assert_output --partial "tape"
 }
 
 @test "counter.bf executes without error" {
-  result=$(bash "$TM_SH" -q "$PROGRAMS_DIR/counter.bf" 2>&1 || true)
-  [[ "$result" == *"tape"* ]]
+  run bash "$TM_SH" -q "$PROGRAMS_DIR/counter.bf"
+  assert_success
+  assert_output --partial "tape"
 }

@@ -74,12 +74,12 @@ get_tape() {
 }
 
 @test "optimization: -p flag shows program was optimized" {
-  result=$(echo "++++" | bash "$TM_SH" -q -p -o /dev/stdin 2>&1 || true)
+  result=$(echo "++++" | bash "$TM_SH" -q -p -o /dev/stdin 2>&1)
   [[ "$result" == *"optimized away"* ]]
 }
 
 @test "optimization: zeroing loop [-] is recognized" {
   # Heavy optimization should convert [-] to Z
-  result=$(echo "+++++[-]" | bash "$TM_SH" -q -p -O /dev/stdin 2>&1 || true)
+  result=$(echo "+++++[-]" | bash "$TM_SH" -q -p -O /dev/stdin 2>&1)
   [[ "$result" == *"Z"* ]]
 }
