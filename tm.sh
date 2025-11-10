@@ -366,7 +366,7 @@ apply_heavy_optimizations() {
   optimize_moves
 
   # recognize zeroing
-  tchars=$(sed -e 's/\[-\]/Z/g' <<< "$tchars")
+  tchars="${tchars//\[-\]/Z}"
 
   optimize_copies
 }
