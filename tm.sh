@@ -162,7 +162,7 @@ run_profiler() {
   # show what percentage of total execution each instruction took
   # useful for finding heavily repeated loops
 
-  local instruction new_percent old_percent sum_percent b_depth size
+  local instruction b_depth size
   local new_percent_int old_percent_int sum_percent_int
 
   instruction=${chars[0]}
@@ -396,7 +396,7 @@ main() {
   local input='' input_file='' quiet=0 step=0 stime=0 max_iters=1000000 iters=0
   local simple_optimize=0 heavy_optimize=0 execution_started=0
   local print=0 raw_input=0 compile=0 profile=0 counter=0
-  local ops='' percent_fewer_instructions=0 percent_speed_up=0
+  local ops=''
 
   tape[0]=0
 
