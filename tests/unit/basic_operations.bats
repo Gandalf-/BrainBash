@@ -5,50 +5,43 @@ load '../helpers/test_helper'
 @test "increment operation increases tape value" {
   run bash "$TM_SH" -q <(echo "+++++")
   assert_success
-  stripped=$(echo "$output" | grep "^tape" | sed 's/\x1b\[[0-9;]*m//g')
-  [[ "$stripped" == *"tape  : 5"* ]]
+  assert_output --partial "tape  : 5"
 }
 
 @test "decrement operation decreases tape value" {
   run bash "$TM_SH" -q <(echo "+++++--")
   assert_success
-  stripped=$(echo "$output" | grep "^tape" | sed 's/\x1b\[[0-9;]*m//g')
-  [[ "$stripped" == *"tape  : 3"* ]]
+  assert_output --partial "tape  : 3"
 }
 
 @test "right shift moves tape position" {
   run bash "$TM_SH" -q <(echo "+++>++")
   assert_success
-  stripped=$(echo "$output" | grep "^tape" | sed 's/\x1b\[[0-9;]*m//g')
-  [[ "$stripped" == *"tape  : 3 2"* ]]
+  assert_output --partial "tape  : 3 2"
 }
 
 @test "left shift moves tape position back" {
   run bash "$TM_SH" -q <(echo "+++>++<")
   assert_success
-  stripped=$(echo "$output" | grep "^tape" | sed 's/\x1b\[[0-9;]*m//g')
-  [[ "$stripped" == *"tape  : 3 2"* ]]
+  assert_output --partial "tape  : 3 2"
 }
 
 @test "simple loop executes when value is non-zero" {
   run bash "$TM_SH" -q <(echo "+++[-]")
   assert_success
-  stripped=$(echo "$output" | grep "^tape" | sed 's/\x1b\[[0-9;]*m//g')
-  [[ "$stripped" == *"tape  : 0"* ]]
+  assert_output --partial "tape  : 0"
 }
 
 @test "loop skips when value is zero" {
   run bash "$TM_SH" -q <(echo "[+++]")
   assert_success
-  stripped=$(echo "$output" | grep "^tape" | sed 's/\x1b\[[0-9;]*m//g')
-  [[ "$stripped" == *"tape  : 0"* ]]
+  assert_output --partial "tape  : 0"
 }
 
 @test "nested loops work correctly" {
   run bash "$TM_SH" -q <(echo "++[>++[>++<-]<-]")
   assert_success
-  stripped=$(echo "$output" | grep "^tape" | sed 's/\x1b\[[0-9;]*m//g')
-  [[ "$stripped" == *"tape  : 0 0 8"* ]]
+  assert_output --partial "tape  : 0 0 8"
 }
 
 @test "tape underflow produces error" {
@@ -60,8 +53,7 @@ load '../helpers/test_helper'
 @test "empty program executes successfully" {
   run bash "$TM_SH" -q <(echo "")
   assert_success
-  stripped=$(echo "$output" | grep "^tape" | sed 's/\x1b\[[0-9;]*m//g')
-  [[ "$stripped" == *"tape  : 0"* ]]
+  assert_output --partial "tape  : 0"
 }
 
 @test "comments are ignored" {
@@ -70,6 +62,5 @@ load '../helpers/test_helper'
 # Another comment
 ++")
   assert_success
-  stripped=$(echo "$output" | grep "^tape" | sed 's/\x1b\[[0-9;]*m//g')
-  [[ "$stripped" == *"tape  : 5"* ]]
+  assert_output --partial "tape  : 5"
 }

@@ -73,11 +73,6 @@ tests/bats/bin/bats tests/unit/basic_operations.bats --filter "increment"
 - simple.bf, loop.bf, nested_loop.bf
 - optimize.bf, multiply.bf, copy.bf, counter.bf
 
-## Known Issues
-
-### Color Codes in Output
-Tests strip ANSI color codes from output since tm.sh always outputs colors regardless of TTY status or quiet mode.
-
 ## Adding New Tests
 
 1. Create a new .bats file in the appropriate directory (unit/ or integration/)

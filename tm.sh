@@ -28,8 +28,14 @@ export char_pos=0             # integer, our current position in the input
 export brace_depth=0          # integer, number of nested braces
 export stack_size=0           # integer, size of the stack
 
-export green=\\0"33[01;32m"
-export normal=\\0"033[00m"
+# Only use colors if outputting to a terminal
+if [[ -t 1 ]]; then
+  export green=\\0"33[01;32m"
+  export normal=\\0"033[00m"
+else
+  export green=""
+  export normal=""
+fi
 
 
 # =========================================

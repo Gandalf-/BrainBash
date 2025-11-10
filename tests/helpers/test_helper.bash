@@ -27,17 +27,12 @@ run_with_input() {
   echo "$input" | bash "$TM_SH" "$@" <(echo "$program")
 }
 
-# Strip ANSI color codes from output
-strip_colors() {
-  sed 's/\x1b\[[0-9;]*m//g'
-}
-
 # Extract just the tape output from tm.sh results
 get_tape_output() {
-  grep "^tape" | sed 's/tape  : //' | strip_colors
+  grep "^tape" | sed 's/tape  : //'
 }
 
 # Extract program output (from . operations)
 get_program_output() {
-  sed '/^tape/d; /^operations:/d; /^program:/d; /^optimized/d; /^$/d; /% time/d; /^---/d; /input?>/d' | strip_colors
+  sed '/^tape/d; /^operations:/d; /^program:/d; /^optimized/d; /^$/d; /% time/d; /^---/d; /input?>/d'
 }

@@ -4,7 +4,7 @@ load '../helpers/test_helper'
 
 # Helper to extract just tape values
 get_tape() {
-  grep "^tape" | sed 's/tape  : //' | sed 's/\x1b\[[0-9;]*m//g'
+  grep "^tape" | sed 's/tape  : //'
 }
 
 @test "simple optimization: repeated increments (+++)" {
