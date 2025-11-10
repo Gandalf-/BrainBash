@@ -52,24 +52,42 @@ tests/bats/bin/bats tests/unit/basic_operations.bats --filter "increment"
 
 ## Test Coverage
 
-### Unit Tests (23 tests)
+### Unit Tests (55 tests)
 
-**basic_operations.bats** - Tests core Brainfuck operations:
+**basic_operations.bats** (15 tests) - Core Brainfuck operations:
 - Increment/decrement operations (+/-)
 - Tape movement (>/<)
 - Loops ([/])
+- Output operations (.)
 - Edge cases (underflow, empty programs, comments)
+- Non-brainfuck character handling
 
-**optimizations.bats** - Tests optimization correctness:
+**optimizations.bats** (28 tests) - Optimization correctness:
 - Simple optimizations (repeated operations)
 - Heavy optimizations (move patterns, zeroing, copies)
 - Equivalence testing (optimized vs non-optimized output)
+- Pattern recognition (moves, copies, zeroing)
+
+**cli_options.bats** (10 tests) - Command-line options:
+- Help and usage display
+- Optimization flags (-o, -O)
+- Print and profile flags (-p, -P)
+- Max iterations (-i)
+- Quiet mode (-q)
+- Compile mode (-c)
+
+**edge_cases.bats** (12 tests) - Edge case handling:
+- Large tape values
+- Extended tape movement
+- Empty loops
+- Wraparound behavior
+- Rapid tape movement
+- Long operation sequences
 
 ### Integration Tests (9 tests)
 
-**example_programs.bats** - Tests example programs:
-- hello_world.bf
-- alphabet.bf
+**example_programs.bats** - Example programs:
+- hello_world.bf, alphabet.bf
 - simple.bf, loop.bf, nested_loop.bf
 - optimize.bf, multiply.bf, copy.bf, counter.bf
 
@@ -84,14 +102,19 @@ tests/bats/bin/bats tests/unit/basic_operations.bats --filter "increment"
 
 ```bash
 @test "my new test" {
-  result=$(bash "$TM_SH" -q <(echo "+++") 2>&1 | grep "^tape" | sed 's/\x1b\[[0-9;]*m//g')
-  [[ "$result" == *"tape  : 3"* ]]
+  run bash "$TM_SH" -q <(echo "+++")
+  assert_success
+  assert_output --partial "tape  : 3"
 }
 ```
 
 ## Test Statistics
 
-- **Total Tests**: 32
-- **Unit Tests**: 23
+- **Total Tests**: 64
+- **Unit Tests**: 55
+  - Basic Operations: 15
+  - Optimizations: 28
+  - CLI Options: 10
+  - Edge Cases: 12
 - **Integration Tests**: 9
-- **Test Execution Time**: ~5-10 seconds
+- **Test Execution Time**: ~10-15 seconds

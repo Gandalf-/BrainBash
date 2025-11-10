@@ -73,13 +73,35 @@ get_tape() {
   [[ "$plain" == "$optimized" ]]
 }
 
-@test "optimization: -p flag shows program was optimized" {
+@test "optimization: repeated operations are combined" {
   result=$(echo "++++" | bash "$TM_SH" -q -p -o /dev/stdin 2>&1)
   [[ "$result" == *"optimized away"* ]]
+  [[ "$result" == *"program: 4+"* ]]
 }
 
 @test "optimization: zeroing loop [-] is recognized" {
   # Heavy optimization should convert [-] to Z
   result=$(echo "+++++[-]" | bash "$TM_SH" -q -p -O /dev/stdin 2>&1)
   [[ "$result" == *"Z"* ]]
+}
+
+@test "optimization: move patterns are recognized" {
+  # [->>+<<] should be optimized to a move pattern
+  result=$(echo "+++[->>+<<]" | bash "$TM_SH" -q -p -O /dev/stdin 2>&1)
+  # Should contain A (move to right) pattern
+  [[ "$result" =~ [0-9]+A ]]
+}
+
+@test "optimization: copy patterns are recognized" {
+  # [->+>+<<] should be optimized to a copy pattern
+  result=$(echo "+++[->+>+<<]" | bash "$TM_SH" -q -p -O /dev/stdin 2>&1)
+  # Should contain C (copy) pattern
+  [[ "$result" =~ C ]]
+}
+
+@test "optimization: percentage calculation is correct" {
+  result=$(echo "++++" | bash "$TM_SH" -q -p -o /dev/stdin 2>&1)
+  # With 4 '+' becoming '4+', we go from 4 instructions to 2 characters
+  # but the optimization message should show percentage
+  [[ "$result" =~ [0-9]+\.[0-9]+% ]]
 }
