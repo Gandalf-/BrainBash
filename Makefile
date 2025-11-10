@@ -8,6 +8,7 @@ test:
 	@tests/bats/bin/bats tests/unit/optimizations.bats
 	@tests/bats/bin/bats tests/unit/cli_options.bats
 	@tests/bats/bin/bats tests/unit/edge_cases.bats
+	@tests/bats/bin/bats tests/unit/advanced_edge_cases.bats
 	@tests/bats/bin/bats tests/integration/
 
 lint:
