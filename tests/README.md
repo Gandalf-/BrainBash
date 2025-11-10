@@ -25,22 +25,30 @@ tests/
 
 ## Running Tests
 
-### Run all tests:
+### Using Make (recommended):
 ```bash
-tests/bats/bin/bats tests/unit/ tests/integration/
+make test                  # Run all tests
+make lint                  # Run shellcheck
+make all                   # Run lint and tests
 ```
 
-### Run specific test suite:
+### Using BATS directly:
 ```bash
+# Run all tests
+tests/bats/bin/bats tests/unit/ tests/integration/
+
+# Run specific test suite
 tests/bats/bin/bats tests/unit/basic_operations.bats
 tests/bats/bin/bats tests/unit/optimizations.bats
 tests/bats/bin/bats tests/integration/example_programs.bats
-```
 
-### Run a single test:
-```bash
+# Run a single test
 tests/bats/bin/bats tests/unit/basic_operations.bats --filter "increment"
 ```
+
+### Requirements:
+- BATS (included as git submodule)
+- shellcheck (for linting): `apt-get install shellcheck`
 
 ## Test Coverage
 
@@ -80,10 +88,6 @@ exit 0  # Not: exit
 
 ### Color Codes in Output
 Tests strip ANSI color codes from output since tm.sh always outputs colors regardless of TTY status or quiet mode.
-
-## CI Integration
-
-Tests run automatically on Travis CI when commits are pushed. See `.travis.yml` for configuration.
 
 ## Adding New Tests
 
